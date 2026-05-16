@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.env
+venv/
+node_modules/
+logs/
+dist/
+build/
+.cache/
+.idea/
+.vscode/
+*.log
+coverage/
+.chromadb/

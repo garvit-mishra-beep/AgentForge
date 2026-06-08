@@ -1,0 +1,11 @@
+# Ignore everything
+*
+
+# But not directories
+!*/
+
+# Allow only .java files
+!*.java
+
+# Allow README
+!README.md

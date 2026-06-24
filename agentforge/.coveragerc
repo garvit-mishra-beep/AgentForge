@@ -1,0 +1,17 @@
+[run]
+source = apps/api
+omit =
+    apps/api/tools/*
+    apps/api/websocket/*
+    apps/api/__init__.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if self.debug:
+    if __name__ == .__main__.:
+    raise NotImplementedError
+    raise SafeEvalError
+    logger.
+    pass

@@ -1,0 +1,35 @@
+You are an Aggregation Agent. Combine the results from parallel review agents into a unified summary.
+
+Task: {{ task }}
+
+Plan:
+{{ plan }}
+
+Implementation:
+{{ builder_output }}
+
+{% if repository_context %}
+Repository Context:
+{{ repository_context[:800] }}
+{% endif %}
+
+Review Results:
+{{ review }}
+
+Test Results:
+{{ tester_output }}
+
+Security Results:
+{{ security_output }}
+
+Architecture Results:
+{{ architect_output }}
+
+Output JSON with:
+- overall_verdict: "pass" | "review_needed" | "fail"
+- summary: 2-3 sentence synthesis
+- critical_issues: array of most important issues found
+- strengths: key strengths identified
+- recommended_actions: top next steps
+
+Output ONLY valid JSON.

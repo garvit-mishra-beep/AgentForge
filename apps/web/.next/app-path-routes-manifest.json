@@ -1,0 +1,23 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/analytics/page": "/analytics",
+  "/benchmark/page": "/benchmark",
+  "/demo/page": "/demo",
+  "/dashboard/page": "/dashboard",
+  "/executions/page": "/executions",
+  "/executions/[id]/page": "/executions/[id]",
+  "/page": "/",
+  "/login/page": "/login",
+  "/register/page": "/register",
+  "/settings/page": "/settings",
+  "/projects/page": "/projects",
+  "/tasks/[id]/page": "/tasks/[id]",
+  "/review/history/page": "/review/history",
+  "/projects/[id]/page": "/projects/[id]",
+  "/teams/page": "/teams",
+  "/review/page": "/review",
+  "/templates/page": "/templates",
+  "/teams/[id]/page": "/teams/[id]",
+  "/tasks/page": "/tasks",
+  "/settings/providers/page": "/settings/providers"
+}

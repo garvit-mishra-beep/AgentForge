@@ -1,0 +1,115 @@
+import logging
+
+from pydantic_settings import BaseSettings
+
+logger = logging.getLogger(__name__)
+
+
+class Settings(BaseSettings):
+    database_url: str = ""
+    database_pool_min: int = 2
+    database_pool_max: int = 10
+
+    cors_origins: list[str] = ["http://localhost:3000"]
+
+    redis_url: str = "redis://localhost:6379/0"
+
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_default_model: str = "qwen2.5-coder:7b"
+
+    openai_api_key: str = ""
+    anthropic_api_key: str = ""
+    google_api_key: str = ""
+    openrouter_api_key: str = ""
+    groq_api_key: str = ""
+
+    encryption_key: str = ""
+
+    # JWT auth
+    jwt_secret: str = ""
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 480
+    jwt_refresh_secret: str = ""
+    jwt_refresh_expire_days: int = 7
+
+    max_steps: int = 20
+    task_timeout_minutes: int = 10
+
+    fast_demo_mode: bool = False
+    max_retries: int = 2
+    max_output_tokens: int = 2048
+    max_context_messages: int = 20
+    max_execution_time: int = 600
+    agent_timeout_lead: int = 20
+    agent_timeout_builder: int = 30
+    agent_timeout_reviewer: int = 15
+    agent_timeout_deliver: int = 15
+
+    review_rate_limit: int = 10
+    review_rate_window: int = 3600
+    review_max_code_length: int = 50000
+    review_max_concurrent: int = 4
+    review_queue_maxsize: int = 20
+    review_models_baseline: str = "phi4-mini,qwen2.5-coder:7b,llama3.2:3b"
+    review_models_builder: str = "qwen2.5-coder:7b,phi4-mini,llama3.2:3b"
+    review_models_reviewer: str = "phi4-mini,qwen2.5-coder:7b,llama3.2:3b"
+
+    auth_enabled: bool = True
+    log_level: str = "INFO"
+    log_format: str = "text"
+
+    upload_dir: str = "uploads"
+    max_upload_size: int = 100 * 1024 * 1024  # 100 MB
+
+    rate_limit_per_minute: int = 60
+    rate_limit_auth_per_minute: int = 10
+    brute_force_max_attempts: int = 5
+    brute_force_lockout_seconds: int = 900
+
+    allowed_upload_mime_types: list[str] = [
+        "text/plain", "text/x-python", "text/x-java", "text/x-c",
+        "text/x-c++", "text/x-javascript", "text/x-typescript",
+        "text/html", "text/css", "text/markdown",
+        "application/json", "application/xml", "application/x-yaml",
+        "application/octet-stream",
+        "image/png", "image/jpeg", "image/gif", "image/svg+xml",
+    ]
+
+    model_config = {"env_prefix": "AGENTFORGE_", "env_file": ".env"}
+
+    @property
+    def agent_timeout(self) -> dict[str, int]:
+        return {
+            "team_lead_plan": self.agent_timeout_lead,
+            "builder": self.agent_timeout_builder,
+            "reviewer": self.agent_timeout_reviewer,
+            "team_lead_deliver": self.agent_timeout_deliver,
+        }
+
+    def validate(self) -> None:
+        errors: list[str] = []
+        if not self.database_url:
+            errors.append("AGENTFORGE_DATABASE_URL is required")
+        if self.auth_enabled:
+            if not self.jwt_secret:
+                errors.append("AGENTFORGE_JWT_SECRET is required when auth_enabled=True")
+            if len(self.jwt_secret) < 16:
+                errors.append("AGENTFORGE_JWT_SECRET must be at least 16 characters")
+            if self.jwt_refresh_secret and len(self.jwt_refresh_secret) < 16:
+                errors.append("AGENTFORGE_JWT_REFRESH_SECRET must be at least 16 characters")
+        if not self.fast_demo_mode:
+            if not self.encryption_key:
+                logger.warning(
+                    "AGENTFORGE_ENCRYPTION_KEY not set. "
+                    "Encrypted API keys will be unrecoverable after restart."
+                )
+        if self.review_rate_limit < 1:
+            errors.append("AGENTFORGE_REVIEW_RATE_LIMIT must be >= 1")
+
+        if errors:
+            raise ValueError(
+                "Configuration errors:\n" + "\n".join(f"  - {e}" for e in errors)
+            )
+
+
+settings = Settings()

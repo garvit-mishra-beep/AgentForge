@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: agentforge-postgres
+    environment:
+      POSTGRES_USER: agentforge
+      POSTGRES_PASSWORD: agentforge
+      POSTGRES_DB: agentforge
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./apps/api/migrations/001_initial.sql:/docker-entrypoint-initdb.d/001_initial.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentforge"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentforge-api
+    ports:
+      - "8000:8000"
+    environment:
+      AGENTFORGE_DATABASE_URL: postgresql://agentforge:agentforge@postgres:5432/agentforge
+      AGENTFORGE_AUTH_ENABLED: "true"
+      AGENTFORGE_JWT_SECRET: "${AGENTFORGE_JWT_SECRET:-dev-jwt-secret-do-not-use-in-production-1234}"
+      AGENTFORGE_LOG_LEVEL: "INFO"
+      AGENTFORGE_CORS_ORIGINS: '["http://localhost:3000"]'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:

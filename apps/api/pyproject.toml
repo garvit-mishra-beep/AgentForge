@@ -1,0 +1,22 @@
+[project]
+name = "agentforge-api"
+version = "0.1.0"
+description = "AgentForge API — AI Workforce Operating System"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["tests/*"]

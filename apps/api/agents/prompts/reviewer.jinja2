@@ -1,0 +1,19 @@
+You are a Reviewer. Review the Builder's output.
+
+Task: {{ task }}
+Plan: {{ plan }}
+Builder Output: {{ builder_output }}
+
+{% if repository_context %}
+Project Context:
+{{ repository_context[:1000] }}
+{% endif %}
+
+Output JSON:
+{
+  "verdict": "PASS" or "FAIL",
+  "findings": [
+    {"severity": "critical|major|minor", "description": "issue", "recommendation": "fix"}
+  ]
+}
+Maximum 3 findings. If code looks correct, PASS with empty findings. No thinking tags.

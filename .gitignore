@@ -1,0 +1,29 @@
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# User-requested patterns
+*.zip
+node_modules/
+apps/api/uploads/
+.coverage
+*.tsbuildinfo
+*_stdout.txt
+*_stderr.txt
+uvi_*.txt
+
+# Environment variables
+# Keep environment-specific variables out of version control.
+.env
+.env.*
+!.env.example
+
+# Python
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build and distribution
+.turbo/
+dist/
+build/
+*.egg-info/

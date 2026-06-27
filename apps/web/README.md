@@ -45,7 +45,7 @@ graph LR
 - Render the full AgentForge UI.
 - Persist JWT + refresh tokens in a non-HttpOnly fallback path (current dev
   behavior; production deployment should switch to HttpOnly cookies).
-- Stream agent output to the user via polling on the executions endpoint.
+- Stream agent output to the user via WebSocket streams on the executions endpoint.
 - Provide UX primitives (sidebar, topbar, command palette, error boundary).
 
 ## Do Not Place Here
@@ -56,6 +56,6 @@ graph LR
 
 ## Related Modules
 
-- Backend contract: `docs/api/API.md`.
+- Backend contract: `docs/api/API_REFERENCE.md`.
 - Style system: shadcn primitives in `components/ui/`.
 - Auth: `apps/api/app/auth.py` defines the JWT format that this app consumes.

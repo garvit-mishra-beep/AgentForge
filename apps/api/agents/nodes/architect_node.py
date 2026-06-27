@@ -42,7 +42,7 @@ async def architect_node(state: AgentState) -> AgentState:
         # Fall back to default provider resolution
         provider = get_provider(model)
 
-    timeout_s = settings.agent_timeout["architect"]
+    timeout_s = settings.agent_timeout.get("architect", 20)
     max_tokens = settings.max_output_tokens if settings.fast_demo_mode else None
 
     # Handle case where plan might be a string that needs parsing
@@ -117,5 +117,4 @@ async def architect_node(state: AgentState) -> AgentState:
     state["architect_output"] = combined_output
 
     logger.info("Architect review complete")
-    return state update")
     return state

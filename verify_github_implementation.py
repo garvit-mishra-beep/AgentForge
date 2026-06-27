@@ -16,7 +16,6 @@ def test_imports():
 
     try:
         # Test basic imports
-    try:
         from apps.api.app.integrations import (
             GitHubAppManager,
             EnhancedPRReviewer,

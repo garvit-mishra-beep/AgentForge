@@ -15,7 +15,7 @@ from core.providers import get_provider, get_provider_for_user
 # Import our evidence gate components
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'app'))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'app')))
 from evidence_gate.core import EvidencePackage, EvidenceValidator, EvidenceItem
 
 logger = logging.getLogger(__name__)
@@ -148,16 +148,15 @@ async def evidence_validator_node(state: AgentState) -> AgentState:
     state["evidence_validation_result"] = json.dumps(summary)
     state["current_step"] = state.get("current_step", "unknown") + "_evidence_validated"
 
-    # Add to agent messages
     state["messages"].append({
         "role": "evidence_validator",
         "model": model,
         "content": json.dumps(summary, indent=2),
         "message_type": "evidence_validation",
         "metadata": {
-            "validated_at
-            }
+            "validated_at": "now"
         }
+    })
 
     logger.info("Evidence Validation complete")
     return state

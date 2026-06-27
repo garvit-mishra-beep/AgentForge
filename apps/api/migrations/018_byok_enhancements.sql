@@ -112,7 +112,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_agent_role ON ai_usage(agent_role);
 -- Create view for usage analytics
 CREATE OR REPLACE VIEW v_ai_usage_summary AS
 SELECT
-    u.user_id,
+    u.id as user_id,
     u.email as user_email,
     COALESCE(p.name, 'NO_PROJECT') as project_name,
     au.provider,
@@ -128,8 +128,8 @@ SELECT
 FROM ai_usage au
 JOIN users u ON au.user_id = u.id
 LEFT JOIN projects p ON au.project_id = p.id
-GROUP BY u.user_id, u.email, p.name, au.provider, au.model
-ORDER BY u.user_id, au.provider, au.model;
+GROUP BY u.id, u.email, p.name, au.provider, au.model
+ORDER BY u.id, au.provider, au.model;
 
 -- Update existing api_keys records to have default values for new columns
 UPDATE api_keys SET project_id = NULL WHERE project_id IS NULL;

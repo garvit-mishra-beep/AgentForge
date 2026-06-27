@@ -11,10 +11,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.api.core.model_registry import ModelRegistry, get_registry
-from apps.api.core.task_tracker import tracker
+from core.model_registry import ModelRegistry, get_registry
+from core.task_tracker import tracker
 from core.config import settings
-from core.database import get_db
+from core.dependencies import get_db
 from core.redis import (
     check_rate_limit,
     rate_limit_reset,
@@ -28,7 +28,6 @@ from models.schemas import (
     ReviewResult,
     LanguageDetectionResponse,
 )
-from core.task_tracker import TaskType
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +35,14 @@ router = APIRouter(prefix="/review", tags=["review"])
 
 # In-memory store for demo mode (would be replaced with Redis/DB in production)
 _reviews: Dict[str, Dict[str, Any]] = {}
+
+
+def start_worker() -> None:
+    logger.info("Review background worker started (no-op)")
+
+
+def stop_worker() -> None:
+    logger.info("Review background worker stopped (no-op)")
 
 
 async def _run_baseline(code: str, language: str, user_id: str) -> tuple:
@@ -235,10 +242,25 @@ async def submit_review(
     user_id: str = None,  # Will be set by dependency or default to demo
     db: AsyncSession = Depends(get_db),
 ):
-    """Submit code for review."""
+    # Clean up old reviews
+    await review_store_cleanup()
+
+    # Rate limiting check
+    ip = http_request.client.host if http_request.client else "unknown"
+    allowed = await check_rate_limit(
+        ip,
+        limit=settings.review_rate_limit,
+        window=settings.review_rate_window
+    )
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Rate limit exceeded. Maximum {settings.review_rate_limit} reviews per hour per IP.",
+        )
+
     # Use provided user_id or fall back to demo user
     if not user_id:
-        from core.auth import DEMO_USER_ID
+        from app.auth import DEMO_USER_ID
         user_id = DEMO_USER_ID
 
     # Generate review ID
@@ -254,7 +276,6 @@ async def submit_review(
             "language": request.language,
             "user_id": user_id,
             "created_at": datetime.now(UTC).isoformat(),
-        .isoformat(),
         }
     )
 
@@ -351,7 +372,7 @@ async def get_review(
     """Get review results by ID."""
     # Use provided user_id or fall back to demo user
     if not user_id:
-        from core.auth import DEMO_USER_ID
+        from app.auth import DEMO_USER_ID
         user_id = DEMO_USER_ID
 
     # Get review state
@@ -373,12 +394,12 @@ async def get_review(
             )
 
     # Format response based on status
-    status = review_data.get("status", "unknown")
+    review_status = review_data.get("status", "unknown")
 
-    if status == "completed":
+    if review_status == "completed":
         return ReviewResult(
             review_id=review_id,
-            status=status,
+            status=review_status,
             baseline_issues=review_data.get("baseline_issues", []),
             builder_output=review_data.get("builder_output", ""),
             review_issues=review_data.get("review_issues", []),
@@ -387,10 +408,10 @@ async def get_review(
             created_at=review_data.get("created_at"),
             completed_at=review_data.get("completed_at"),
         )
-    elif status == "failed":
+    elif review_status == "failed":
         return ReviewResult(
             review_id=review_id,
-            status=status,
+            status=review_status,
             error=review_data.get("error", "Unknown error"),
             created_at=review_data.get("created_at"),
             failed_at=review_data.get("failed_at"),
@@ -399,7 +420,7 @@ async def get_review(
         # queued, analyzing, reviewing
         return ReviewResult(
             review_id=review_id,
-            status=status,
+            status=review_status,
             created_at=review_data.get("created_at"),
         )
 
@@ -427,7 +448,7 @@ async def detect_language(code: str):
         return LanguageDetectionResponse(language="java", confidence=0.9)
 
     # C/C++ indicators
-    if any(keyword in code_lower for keyword in "#include", "int main()", "printf(", "cout <<"):
+    if any(keyword in code_lower for keyword in ["#include", "int main()", "printf(", "cout <<"]):
         if "cout <<" in code_lower or "namespace " in code_lower:
             return LanguageDetectionResponse(language="cpp", confidence=0.8)
         return LanguageDetectionResponse(language="c", confidence=0.8)
@@ -445,11 +466,11 @@ async def detect_language(code: str):
         return LanguageDetectionResponse(language="sql", confidence=0.8)
 
     # HTML indicators
-    if any(keyword in code_lower for keyword in "<!doctype", "<html", "<body", "<div "):
+    if any(keyword in code_lower for keyword in ["<!doctype", "<html", "<body", "<div "]):
         return LanguageDetectionResponse(language="html", confidence=0.8)
 
     # CSS indicators
-    if any(keyword in code_lower for keyword in "{", "color:", "background:", "font-size:"):
+    if any(keyword in code_lower for keyword in ["{", "color:", "background:", "font-size:"]):
         # Check if it looks like CSS (has properties)
         if ":" in code_lower and "{" in code_lower:
             return LanguageDetectionResponse(language="css", confidence=0.7)
@@ -467,7 +488,7 @@ async def get_review_status_legacy(
     """Get review status (legacy endpoint)."""
     # Use provided user_id or fall back to demo user
     if not user_id:
-        from core.auth import DEMO_USER_ID
+        from app.auth import DEMO_USER_ID
         user_id = DEMO_USER_ID
 
     review_data = await get_review_state(review_id)

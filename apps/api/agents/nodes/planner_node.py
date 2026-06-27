@@ -18,8 +18,8 @@ async def planner_node(state: AgentState) -> AgentState:
     project_id = state.get("project_id")
     db = state.get("db")  # Database session would be passed in state in a real implementation
 
-    # Get the model for the planner
-    model = state["team_config"]["planner"]["model"]
+    # Get the model for the planner (fall back to team_lead model or settings default if not specified)
+    model = state["team_config"].get("planner", {}).get("model", state["team_config"].get("team_lead", {}).get("model", "qwen2.5-coder:7b"))
 
     # Try to get user-specific provider configuration
     provider = None
@@ -38,7 +38,7 @@ async def planner_node(state: AgentState) -> AgentState:
         # Fall back to default provider resolution
         provider = get_provider(model)
 
-    timeout_s = settings.agent_timeout["planner"]
+    timeout_s = settings.agent_timeout.get("planner", 20)
     max_tokens = settings.max_output_tokens if settings.fast_demo_mode else None
 
     safe_task = wrap_task(state["task"]["description"])

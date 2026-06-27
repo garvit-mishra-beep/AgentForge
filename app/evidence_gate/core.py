@@ -191,9 +191,8 @@ class EvidenceValidator:
             "deployment": {
                 "release": ["release_notes", "deployment_logs", "rollback_plan"],
                 "environment": ["configuration_files", "infrastructure_as_code", "health_check_results"],
-                "rollback": ["backup_verification", "rollback_test_results", "service_restored": [],
-    }
-            ]
+                "rollback": ["backup_verification", "rollback_test_results", "service_restored"]
+            }
         }
 
     def validate_evidence_package(self, evidence_package: EvidencePackage,
@@ -307,7 +306,7 @@ def create_test_log_evidence(test_name: str, log_path: str, passed: bool,
     """Create evidence from test execution logs."""
     return EvidenceItem(
         evidence_type="test_log",
-        description=description or f"Test execution log for {test_case}",
+        description=description or f"Test execution log for {test_name}",
         data={"test_name": test_name, "log_path": log_path, "passed": passed},
         relevance=f"Shows whether test '{test_name}' passed or failed",
         confidence=0.9 if passed else 0.3,  # High confidence for passing, low for failing
@@ -330,7 +329,7 @@ def create_code_evidence(file_path: str, description: str = None) -> EvidenceIte
 def create_document_evidence(doc_path: str, doc_type: str, description: str = None) -> EvidenceItem:
     """Create evidence from documents."""
     return EvidenceItem(
-        evidence_type=document_type.lower().replace(" ", "_"),
+        evidence_type=doc_type.lower().replace(" ", "_"),
         description=description or f"Document: {doc_path}",
         data={"file_path": doc_path, "document_type": doc_type},
         relevance=f"Provides {doc_type} information relevant to the claim",

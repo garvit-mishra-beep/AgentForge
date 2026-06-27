@@ -84,4 +84,4 @@ See `docs/architecture/SYSTEM_ARCHITECTURE.md` for the full breakdown.
 - Migrations live here and are applied automatically on startup
   (`pool.run_migrations()`).
 - The CLI (`apps/cli`) and Web (`apps/web`) are its only consumers.
-- Configuration: see `docs/development/ENV.md` for the full env-var reference.
+- Configuration: see `docs/getting-started/SETUP.md` for the full env-var reference.

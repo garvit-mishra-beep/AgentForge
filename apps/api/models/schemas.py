@@ -265,3 +265,82 @@ class FileResponse(BaseModel):
     created_by: UUID | str
     created_at: datetime
     updated_at: datetime
+
+
+# ── API Endpoints & Usage ──────────────────────────────────────────────
+
+class ApiEndpointCreate(BaseModel):
+    provider: ProviderName
+    name: str = Field(..., min_length=1, max_length=255)
+    base_url: str = Field(..., min_length=1)
+    api_key_id: str | None = None
+    headers: dict | None = None
+    config: dict | None = None
+
+
+class ApiEndpointUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=255)
+    base_url: str | None = Field(None, min_length=1)
+    api_key_id: str | None = None
+    is_default: bool | None = None
+    headers: dict | None = None
+    config: dict | None = None
+
+
+class ApiEndpointResponse(BaseModel):
+    id: UUID | str
+    user_id: UUID | str
+    project_id: UUID | str | None
+    provider: str
+    name: str
+    base_url: str
+    api_key_id: UUID | str | None
+    is_default: bool
+    headers: dict | None = None
+    config: dict | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class UsageDataPoint(BaseModel):
+    date: str
+    cost_usd: float
+    tokens: int
+
+
+class UsageStatsResponse(BaseModel):
+    total_cost_usd: float
+    total_requests: int
+    by_provider_model: list[dict]
+    daily_data: list[UsageDataPoint]
+
+
+# ── Code Review ────────────────────────────────────────────────────────
+
+class ReviewRequest(BaseModel):
+    code: str = Field(..., min_length=1)
+    language: str | None = None
+
+
+class ReviewResponse(BaseModel):
+    review_id: str
+    status: str
+
+
+class ReviewResult(BaseModel):
+    review_id: str
+    status: str
+    baseline_issues: list[dict] | None = None
+    builder_output: str | None = None
+    review_issues: list[dict] | None = None
+    summary: str | None = None
+    model_used: str | None = None
+    created_at: str | None = None
+    completed_at: str | None = None
+    error: str | None = None
+    failed_at: str | None = None
+
+
+class LanguageDetectionResponse(BaseModel):
+    language: str
+    confidence: float

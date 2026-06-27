@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query, status
 from sqlalchemy import select, update, delete, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import require_user, get_optional_user, DEMO_USER_ID
+from app.auth import require_user, DEMO_USER_ID
 from core.encryption import EncryptionService
 from core.validation import (
     get_provider_info,
@@ -26,7 +26,7 @@ from models.schemas import (
     UsageDataPoint,
 )
 from core.config import settings
-from core.database import get_db
+from core.dependencies import get_db
 from sqlalchemy.sql import func
 
 router = APIRouter(prefix="/keys", tags=["keys"])
@@ -39,10 +39,6 @@ def get_encryption(request: Request) -> EncryptionService:
     if _encryption is None:
         _encryption = EncryptionService()
     return _encryption
-
-
-async def get_db(request: Request) -> AsyncSession:
-    return request.app.state.db
 
 
 # Helper functions
@@ -203,8 +199,6 @@ async def list_api_keys(
     include_disabled: bool = Query(False, description="Include disabled keys"),
     db: AsyncSession = Depends(get_db)
 ) -> List[ApiKeyResponse]:
-    db = get_db(request)  # This is wrong, let me fix it
-
     # Build query
     query = """
         SELECT id, provider, key_preview, is_enabled, created_at, updated_at, is_default

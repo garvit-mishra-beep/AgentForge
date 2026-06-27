@@ -40,6 +40,6 @@ graph LR
 
 ## Related Modules
 
-- API contract: `docs/api/API.md`.
+- API contract: `docs/api/API_REFERENCE.md`.
 - Auth format: `apps/api/app/auth.py`.
 - Quick Review route: `apps/api/app/routes/review.py`.

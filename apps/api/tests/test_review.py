@@ -66,8 +66,8 @@ def mock_providers():
     mock_provider.chat = smart_chat
 
     # Mock the model registry methods
-    with patch("apps.api.core.model_registry.ModelRegistry.get_legacy_chain") as mock_chain, \
-         patch("apps.api.core.model_registry.ModelRegistry.get_provider_for_user") as mock_get_provider:
+    with patch("core.model_registry.ModelRegistry.get_legacy_chain") as mock_chain, \
+         patch("core.model_registry.ModelRegistry.get_provider_for_user") as mock_get_provider:
 
         # Return predictable model chains
         mock_chain.side_effect = lambda role: {
@@ -144,8 +144,8 @@ async def test_review_json_error_handling(client, mock_providers):
     bad_provider.chat = bad_chat
 
     # Mock the model registry methods for this specific test
-    with patch("apps.api.core.model_registry.ModelRegistry.get_legacy_chain") as mock_chain, \
-         patch("apps.api.core.model_registry.ModelRegistry.get_provider_for_user") as mock_get_provider:
+    with patch("core.model_registry.ModelRegistry.get_legacy_chain") as mock_chain, \
+         patch("core.model_registry.ModelRegistry.get_provider_for_user") as mock_get_provider:
 
         # Return predictable model chains
         mock_chain.side_effect = lambda role: {

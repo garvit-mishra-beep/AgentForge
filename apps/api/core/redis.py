@@ -220,3 +220,9 @@ async def brute_force_reset() -> None:
             if cursor == 0:
                 break
     _INMEM_BF.clear()
+
+
+# Compatibility aliases
+get_review_state = review_store_get
+check_rate_limit = rate_limit_check
+

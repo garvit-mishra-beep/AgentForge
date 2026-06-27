@@ -394,7 +394,7 @@ graph LR
 - **Tenant isolation:** every query filters by `user_id` (and `project_id`
   when supplied).
 
-See `docs/architecture/AGENT_MEMORY.md` for the full model and tuning guide.
+See `docs/agents/AGENT_SYSTEM.md` for the full model and tuning guide.
 
 ---
 
@@ -621,7 +621,7 @@ Auth endpoints additionally apply brute-force lockout
 
 Everything is environment-driven via `core/config.py` (Pydantic Settings). The
 single source of truth is `apps/api/.env.example`; see
-[`docs/development/ENV.md`](../development/ENV.md) for the annotated
+[`docs/getting-started/SETUP.md`](../getting-started/SETUP.md) for the annotated
 reference.
 
 ### Deployment

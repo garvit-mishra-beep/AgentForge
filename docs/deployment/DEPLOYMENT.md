@@ -1,18 +1,18 @@
 # Deployment Guide — AgentForge
 
-**Last Updated:** June 2026
+Detailed specifications for deploying the Next.js frontend to Vercel and the FastAPI backend service to Railway or Docker-compatible hosting solutions.
 
 ---
 
-## Architecture
+## 1. System Architecture Diagram
 
-```
+```text
 ┌──────────────────────┐      ┌──────────────────────┐
 │   Vercel (Frontend)  │      │  Railway (Backend)   │
 │  ┌────────────────┐  │      │  ┌────────────────┐  │
-│  │  Next.js 15    │  │◀────▶│  │  FastAPI       │  │
-│  │  Edge Network  │  │ HTTP │  │  Docker        │  │
-│  └────────────────┘  │  WS  │  └────────────────┘  │
+│  │  Next.js 15    │  │◀────＞│  │  FastAPI       │  │
+│  │  Edge Network  │  │ HTTP  │  │  Docker        │  │
+│  └────────────────┘  │  WS   │  └────────────────┘  │
 │                      │      │         │             │
 │                      │      │  ┌──────┴──────┐      │
 │                      │      │  │  PostgreSQL  │      │
@@ -27,193 +27,46 @@
 
 ---
 
-## Vercel Setup (Frontend)
+## 2. Vercel Setup (Frontend client)
 
-### Step 1: Connect GitHub Repository
-
-1. Go to [vercel.com](https://vercel.com) → Add New Project
-2. Import the `agentforge` GitHub repository
-3. Select the `apps/web` directory as the root (monorepo setup)
+### Step 1: Create Project
+1. Log in to [vercel.com](https://vercel.com) and click **Add New Project**.
+2. Connect your GitHub repository and select the subfolder `apps/web` as the project root.
 
 ### Step 2: Configure Environment Variables
+Configure these variables in your Vercel settings page:
 
-In the Vercel project settings, add:
-
-| Variable | Source |
-|----------|--------|
-| `NEXT_PUBLIC_APP_URL` | `https://agentforge.vercel.app` |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk Dashboard → API Keys |
-| `CLERK_SECRET_KEY` | Clerk Dashboard → API Keys |
-| `NEXT_PUBLIC_WS_URL` | `wss://api.agentforge.dev/ws` |
-
-### Step 3: Configure Build Settings
-
-From Vercel dashboard:
-- **Framework preset:** Next.js
-- **Build command:** `cd ../.. && pnpm build --filter=web...` (Turborepo)
-- **Output directory:** `.next`
-- **Install command:** `pnpm install`
-
-### Step 4: Deploy
-
-Vercel auto-deploys on every push to `main`. Each deploy gets a unique preview URL.
+| Variable | Recommended Value | Description |
+|:---|:---|:---|
+| `NEXT_PUBLIC_APP_URL` | `https://agentforge.vercel.app` | The public client URL. |
+| `NEXT_PUBLIC_API_URL` | `https://api.agentforge.dev` | The REST API backend URL. |
+| `NEXT_PUBLIC_WS_URL` | `wss://api.agentforge.dev` | The WebSocket event stream URL. |
 
 ---
 
-## Railway Setup (Backend)
+## 3. Railway Setup (Backend API)
 
-### Step 1: Create Railway Project
+### Step 1: Add PostgreSQL and Redis
+Ensure your project contains:
+1. A PostgreSQL service (running PostgreSQL 16 or newer) with the `pgvector` extension enabled.
+2. A Redis service (running Redis 7 or newer).
 
-1. Go to [railway.app](https://railway.app) → New Project
-2. Select "Deploy from GitHub repo" → select `agentforge`
-3. Set root directory to `apps/api`
+### Step 2: Configure Environment Variables
+Add these values in your backend service configuration:
 
-### Step 2: Add Services
-
-From Railway dashboard:
-
-```
-Project: agentforge-api
-├── FastAPI Service (from apps/api/Dockerfile)
-├── PostgreSQL Plugin (v16)
-└── Redis Plugin (v7)
-```
-
-### Step 3: Configure Environment Variables
-
-In Railway project settings:
-
-| Variable | Value |
-|----------|-------|
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (Railway template) |
-| `REDIS_URL` | `${{Redis.REDIS_URL}}` (Railway template) |
-| `OPENAI_API_KEY` | From 1Password |
-| `ANTHROPIC_API_KEY` | From 1Password |
-| `GOOGLE_API_KEY` | From 1Password |
-| `ENCRYPTION_KEY` | Generated 32-byte hex |
-| `NODE_ENV` | `production` |
-
-### Step 4: Deploy
-
-Railway auto-deploys on push to `main`. Each deploy creates a new container with the latest Docker image.
+| Variable | Source / Recommended Value | Description |
+|:---|:---|:---|
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | PostgreSQL connection string. |
+| `REDIS_URL` | `${{Redis.REDIS_URL}}` | Redis connection string. |
+| `JWT_SECRET` | 32-byte secure key | Secret key used to sign session tokens. |
+| `ENCRYPTION_KEY` | 32-byte secure key | Fernet key used to encrypt BYOK values. |
+| `OPENAI_API_KEY` | From credentials vault | Default fallback OpenAI API key. |
 
 ---
 
-## GitHub Actions CI/CD
+## 4. Docker Deployment
 
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy AgentForge
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-      - run: pnpm install
-      - run: pnpm lint
-
-  test:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: agentforge
-          POSTGRES_PASSWORD: agentforge
-          POSTGRES_DB: agentforge_test
-        ports: [5432:5432]
-      redis:
-        image: redis:7
-        ports: [6379:6379]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: pnpm install
-      - run: pnpm test:web
-      - run: pnpm test:api
-        env:
-          DATABASE_URL: postgresql://agentforge:agentforge@localhost:5432/agentforge_test
-          REDIS_URL: redis://localhost:6379/0
-
-  deploy-frontend:
-    needs: [lint, test]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: --prod
-
-  deploy-backend:
-    needs: [lint, test]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: railway/railway-action@v2
-        with:
-          railway-token: ${{ secrets.RAILWAY_TOKEN }}
-          service: backend
-```
-
----
-
-## Environment Promotion
-
-```
-dev (local) → staging (railway.dev) → prod (railway.app / vercel.com)
-```
-
-| Environment | Frontend URL | Backend URL | Purpose |
-|-------------|-------------|-------------|---------|
-| dev | localhost:3000 | localhost:8000 | Local development |
-| staging | *.vercel.app (preview) | *.railway.dev | PR preview, QA |
-| prod | agentforge.app | api.agentforge.dev | Production |
-
----
-
-## Rollback Procedures
-
-### Vercel (Frontend)
-
-1. Go to Vercel dashboard → Deployments
-2. Find the last known-good deployment
-3. Click "..." → "Promote to Production"
-4. Rollback is instant (Vercel serves the previous build)
-
-### Railway (Backend)
-
-1. Go to Railway dashboard → Deployments
-2. Find the last known-good deployment
-3. Click "Redeploy" on that deployment
-4. Railway restarts the service with the previous Docker image
-
----
-
-## Dockerfile (apps/api)
+The backend service can be built and run using the root Dockerfile configuration:
 
 ```dockerfile
 FROM python:3.11-slim AS builder

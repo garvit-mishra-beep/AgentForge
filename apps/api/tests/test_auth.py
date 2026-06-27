@@ -102,6 +102,55 @@ async def test_refresh_token_with_invalid_token(client):
     assert resp.status_code == 401
 
 
+async def _register(ac, email="rot@test.com"):
+    resp = await ac.post("/api/v1/auth/register", json={
+        "email": email, "password": "testpass123", "name": "Rot",
+    })
+    assert resp.status_code == 201, resp.text
+    return resp.json()
+
+
+@pytest.mark.asyncio
+async def test_refresh_rotation_revokes_old_token(setup_db):
+    """A refresh token is single-use: after rotation the old one is rejected."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        data = await _register(ac, "rotate@test.com")
+        old_refresh = data["refresh_token"]
+
+        first = await ac.post("/api/v1/auth/refresh", json={"refresh_token": old_refresh})
+        assert first.status_code == 200
+        new_refresh = first.json()["refresh_token"]
+        assert new_refresh != old_refresh
+
+        # Replaying the old (now rotated) token must fail.
+        replay = await ac.post("/api/v1/auth/refresh", json={"refresh_token": old_refresh})
+        assert replay.status_code == 401
+
+        # The freshly issued token still works.
+        ok = await ac.post("/api/v1/auth/refresh", json={"refresh_token": new_refresh})
+        assert ok.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_logout_revokes_refresh_token(setup_db):
+    """After /logout the refresh token can no longer be used."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        data = await _register(ac, "logout@test.com")
+        refresh_token = data["refresh_token"]
+        headers = {"Authorization": f"Bearer {data['token']}"}
+
+        out = await ac.post(
+            "/api/v1/auth/logout",
+            json={"refresh_token": refresh_token}, headers=headers,
+        )
+        assert out.status_code == 204
+
+        resp = await ac.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
+        assert resp.status_code == 401
+
+
 @pytest.mark.asyncio
 async def test_register_duplicate_email(setup_db):
     """Registering the same email twice returns 409."""

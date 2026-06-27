@@ -1,14 +1,12 @@
-import asyncio
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.auth import require_user
 from agents.orchestrator import run_task
+from app.auth import require_user
 from core.task_tracker import tracker
 from models.schemas import (
     TaskCreate,
-    TaskDetailResponse,
     TaskMessageResponse,
     TaskResponse,
     TaskStatus,
@@ -50,6 +48,24 @@ async def create_task(
     user_id: str = Depends(require_user),
 ):
     db = _db(request)
+
+    # Authorization: the caller must own the target team (and project, if any).
+    # Without this a user could create a task against a team/project they don't
+    # own (IDOR, TOP_FINDINGS #4).
+    owns_team = await db.fetchval(
+        "SELECT 1 FROM teams WHERE id = $1 AND created_by = $2",
+        body.team_id, user_id,
+    )
+    if not owns_team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    if body.project_id:
+        owns_project = await db.fetchval(
+            "SELECT 1 FROM projects WHERE id = $1 AND created_by = $2",
+            body.project_id, user_id,
+        )
+        if not owns_project:
+            raise HTTPException(status_code=404, detail="Project not found")
 
     members = await db.fetch(
         "SELECT role::text, model FROM team_members WHERE team_id = $1",

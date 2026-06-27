@@ -56,6 +56,13 @@ class Settings(BaseSettings):
 
     auth_enabled: bool = True
     log_level: str = "INFO"
+
+    # GitHub App integration (PR review bot)
+    github_app_id: str = ""
+    github_app_private_key: str = ""  # PEM contents OR a file path
+    github_webhook_secret: str = ""
+    github_api_base: str = "https://api.github.com"
+    github_review_model: str = "qwen2.5-coder:7b"
     log_format: str = "text"
 
     upload_dir: str = "uploads"
@@ -95,8 +102,19 @@ class Settings(BaseSettings):
                 errors.append("AGENTFORGE_JWT_SECRET is required when auth_enabled=True")
             if len(self.jwt_secret) < 16:
                 errors.append("AGENTFORGE_JWT_SECRET must be at least 16 characters")
-            if self.jwt_refresh_secret and len(self.jwt_refresh_secret) < 16:
+            # A distinct refresh secret is mandatory: falling back to the access
+            # secret would let an access token be replayed as a refresh token
+            # (TOP_FINDINGS #7).
+            if not self.jwt_refresh_secret:
+                errors.append(
+                    "AGENTFORGE_JWT_REFRESH_SECRET is required when auth_enabled=True"
+                )
+            elif len(self.jwt_refresh_secret) < 16:
                 errors.append("AGENTFORGE_JWT_REFRESH_SECRET must be at least 16 characters")
+            elif self.jwt_refresh_secret == self.jwt_secret:
+                errors.append(
+                    "AGENTFORGE_JWT_REFRESH_SECRET must differ from AGENTFORGE_JWT_SECRET"
+                )
         if not self.fast_demo_mode:
             if not self.encryption_key:
                 logger.warning(

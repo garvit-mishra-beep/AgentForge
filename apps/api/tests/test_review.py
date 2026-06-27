@@ -65,10 +65,20 @@ def mock_providers():
 
     mock_provider.chat = smart_chat
 
-    with patch("app.routes.review.get_provider") as mock_get, \
-         patch("core.model_registry.get_provider") as mock_reg_get:
-        mock_get.return_value = mock_provider
-        mock_reg_get.return_value = mock_provider
+    # Mock the model registry methods
+    with patch("apps.api.core.model_registry.ModelRegistry.get_legacy_chain") as mock_chain, \
+         patch("apps.api.core.model_registry.ModelRegistry.get_provider_for_user") as mock_get_provider:
+
+        # Return predictable model chains
+        mock_chain.side_effect = lambda role: {
+            "baseline": ["claude-3-5-sonnet"],
+            "builder": ["gpt-4o"],
+            "reviewer": ["claude-3-5-sonnet"]
+        }.get(role, ["claude-3-5-sonnet"])
+
+        # Return our mock provider and provider type
+        mock_get_provider.return_value = (mock_provider, "anthropic")
+
         yield
 
 
@@ -133,10 +143,19 @@ async def test_review_json_error_handling(client, mock_providers):
 
     bad_provider.chat = bad_chat
 
-    with patch("app.routes.review.get_provider") as mock_get, \
-         patch("core.model_registry.get_provider") as mock_reg_get:
-        mock_get.return_value = bad_provider
-        mock_reg_get.return_value = bad_provider
+    # Mock the model registry methods for this specific test
+    with patch("apps.api.core.model_registry.ModelRegistry.get_legacy_chain") as mock_chain, \
+         patch("apps.api.core.model_registry.ModelRegistry.get_provider_for_user") as mock_get_provider:
+
+        # Return predictable model chains
+        mock_chain.side_effect = lambda role: {
+            "baseline": ["claude-3-5-sonnet"],
+            "builder": ["gpt-4o"],
+            "reviewer": ["claude-3-5-sonnet"]
+        }.get(role, ["claude-3-5-sonnet"])
+
+        # Return our bad provider and provider type
+        mock_get_provider.return_value = (bad_provider, "anthropic")
 
         response = await client.post(
             "/api/v1/review",

@@ -24,6 +24,9 @@ _OPEN_ROUTES = {
     "POST:/api/v1/auth/refresh",
     "GET:/api/v1/keys/providers",
     "POST:/api/v1/keys/validate",
+    # GitHub webhooks authenticate via HMAC signature, not a user JWT.
+    "POST:/api/v1/integrations/github/webhook",
+    "GET:/api/v1/integrations/github/status",
     "GET:/docs",
     "GET:/openapi.json",
     "GET:/redoc",
@@ -35,7 +38,12 @@ def _get_jwt_secret() -> str:
 
 
 def _get_refresh_secret() -> str:
-    return settings.jwt_refresh_secret or _get_jwt_secret()
+    # A distinct refresh secret is required when auth is on (enforced by
+    # settings.validate()). The access-secret fallback only applies in the
+    # auth-disabled local/demo mode (TOP_FINDINGS #7).
+    if settings.jwt_refresh_secret:
+        return settings.jwt_refresh_secret
+    return _get_jwt_secret()
 
 
 def hash_password(password: str) -> str:
@@ -78,33 +86,89 @@ def verify_token(token: str) -> str | None:
         return None
 
 
-def create_refresh_token(user_id: str) -> str:
+def create_refresh_token(user_id: str) -> tuple[str, str, datetime]:
+    """Mint a refresh token. Returns ``(token, jti, expires_at)``.
+
+    The caller is expected to persist ``jti``/``expires_at`` via
+    :func:`store_refresh_token` so the token can later be rotated or revoked.
+    """
     now = datetime.now(tz=UTC)
+    expires_at = now + timedelta(days=settings.jwt_refresh_expire_days)
+    jti = str(uuid.uuid4())
     payload = {
         "sub": user_id,
         "iat": now,
-        "exp": now + timedelta(days=settings.jwt_refresh_expire_days),
+        "exp": expires_at,
         "type": "refresh",
-        "jti": uuid.uuid4().hex,
+        "jti": jti,
     }
-    return jwt.encode(payload, _get_refresh_secret(), algorithm="HS256")
+    token = jwt.encode(payload, _get_refresh_secret(), algorithm="HS256")
+    return token, jti, expires_at
 
 
-def verify_refresh_token(token: str) -> str | None:
+def decode_refresh_token(token: str) -> dict | None:
+    """Validate signature/expiry/type and return the full payload (incl. jti)."""
     try:
         payload = jwt.decode(
             token,
             _get_refresh_secret(),
             algorithms=["HS256"],
-            options={"require": ["sub", "exp", "type"]},
+            options={"require": ["sub", "exp", "type", "jti"]},
         )
         if payload.get("type") != "refresh":
             return None
-        return payload["sub"]
+        return payload
     except jwt.ExpiredSignatureError:
         return None
     except jwt.InvalidTokenError:
         return None
+
+
+def verify_refresh_token(token: str) -> str | None:
+    """Backwards-compatible helper: return the subject (user id) or ``None``."""
+    payload = decode_refresh_token(token)
+    return payload["sub"] if payload else None
+
+
+# ── Refresh-token persistence (rotation + revocation) ──────────────────────
+
+
+async def store_refresh_token(db, jti: str, user_id: str, expires_at: datetime) -> None:
+    await db.execute(
+        "INSERT INTO refresh_tokens (jti, user_id, expires_at) VALUES ($1, $2, $3)",
+        jti, user_id, expires_at,
+    )
+
+
+async def refresh_token_active(db, jti: str, user_id: str) -> bool:
+    """True only if the jti is stored, unrevoked, unexpired and owned by user."""
+    return bool(
+        await db.fetchval(
+            """
+            SELECT 1 FROM refresh_tokens
+            WHERE jti = $1 AND user_id = $2
+              AND revoked = FALSE AND expires_at > NOW()
+            """,
+            jti, user_id,
+        )
+    )
+
+
+async def revoke_refresh_token(db, jti: str, replaced_by: str | None = None) -> bool:
+    """Revoke a single refresh token. Returns True if a row was updated."""
+    result = await db.execute(
+        "UPDATE refresh_tokens SET revoked = TRUE, replaced_by = $2 WHERE jti = $1 AND revoked = FALSE",
+        jti, replaced_by,
+    )
+    # asyncpg returns a status string like "UPDATE 1".
+    return result.endswith("1")
+
+
+async def revoke_all_refresh_tokens(db, user_id: str) -> None:
+    await db.execute(
+        "UPDATE refresh_tokens SET revoked = TRUE WHERE user_id = $1 AND revoked = FALSE",
+        user_id,
+    )
 
 
 async def get_current_user(request: Request) -> str | None:

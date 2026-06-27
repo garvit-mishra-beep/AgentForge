@@ -1,16 +1,21 @@
-"""Authentication routes - login, register, refresh."""
+"""Authentication routes - login, register, refresh, logout."""
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.auth import (
     create_refresh_token,
     create_token,
+    decode_refresh_token,
     hash_password,
+    refresh_token_active,
+    require_user,
+    revoke_all_refresh_tokens,
+    revoke_refresh_token,
+    store_refresh_token,
     verify_password,
-    verify_refresh_token,
 )
 from core.config import settings
 from core.observability import emit
@@ -27,6 +32,10 @@ class RefreshRequest(BaseModel):
 class RefreshResponse(BaseModel):
     token: str
     refresh_token: str
+
+
+class LogoutRequest(BaseModel):
+    refresh_token: str = Field(..., min_length=1)
 
 
 def _db(request: Request):
@@ -68,7 +77,8 @@ async def login(body: LoginRequest, request: Request) -> AuthResponse:
 
     user_id = str(row["id"])
     token = create_token(user_id)
-    refresh_token = create_refresh_token(user_id)
+    refresh_token, jti, expires_at = create_refresh_token(user_id)
+    await store_refresh_token(db, jti, user_id, expires_at)
 
     return AuthResponse(
         token=token,
@@ -99,7 +109,8 @@ async def register(body: RegisterRequest, request: Request) -> AuthResponse:
     )
 
     token = create_token(user_id)
-    refresh_token = create_refresh_token(user_id)
+    refresh_token, jti, expires_at = create_refresh_token(user_id)
+    await store_refresh_token(db, jti, user_id, expires_at)
 
     return AuthResponse(
         token=token,
@@ -111,12 +122,46 @@ async def register(body: RegisterRequest, request: Request) -> AuthResponse:
 
 
 @router.post("/refresh")
-async def refresh(body: RefreshRequest) -> RefreshResponse:
-    user_id = verify_refresh_token(body.refresh_token)
-    if user_id is None:
+async def refresh(body: RefreshRequest, request: Request) -> RefreshResponse:
+    """Rotate a refresh token: validate, revoke the old jti, issue a new pair.
+
+    Reuse of an already-rotated/revoked token is rejected (401) — this both
+    enforces single-use rotation and detects token theft.
+    """
+    db = _db(request)
+    payload = decode_refresh_token(body.refresh_token)
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+
+    user_id = payload["sub"]
+    old_jti = payload["jti"]
+
+    if not await refresh_token_active(db, old_jti, user_id):
+        # Token was never issued by us, already used, revoked, or expired.
+        emit("refresh_token_reuse", {"user_id": user_id, "jti": old_jti})
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
     new_token = create_token(user_id)
-    new_refresh = create_refresh_token(user_id)
+    new_refresh, new_jti, expires_at = create_refresh_token(user_id)
+    await store_refresh_token(db, new_jti, user_id, expires_at)
+    await revoke_refresh_token(db, old_jti, replaced_by=new_jti)
 
     return RefreshResponse(token=new_token, refresh_token=new_refresh)
+
+
+@router.post("/logout", status_code=204)
+async def logout(body: LogoutRequest, request: Request, user_id: str = Depends(require_user)):
+    """Revoke the presented refresh token. Idempotent."""
+    db = _db(request)
+    payload = decode_refresh_token(body.refresh_token)
+    if payload and payload.get("sub") == user_id:
+        await revoke_refresh_token(db, payload["jti"])
+    return None
+
+
+@router.post("/logout-all", status_code=204)
+async def logout_all(request: Request, user_id: str = Depends(require_user)):
+    """Revoke every refresh token for the current user (logout everywhere)."""
+    db = _db(request)
+    await revoke_all_refresh_tokens(db, user_id)
+    return None

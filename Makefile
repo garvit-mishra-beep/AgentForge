@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck security docker dev run clean
+.PHONY: install test lint typecheck security docker dev run clean benchmark benchmark-mock benchmark-load eval
 
 # ── Python (API) ────────────────────────────────────────────────────
 
@@ -46,10 +46,18 @@ run:
 # ── Benchmarks ──────────────────────────────────────────────────────
 
 benchmark:
-	cd apps/api && python benchmark_simplified.py
+	cd apps/api && python -m benchmarks.runner
+
+benchmark-mock:
+	cd apps/api && python -m benchmarks.runner --mock --out benchmark_results.json
 
 benchmark-load:
 	cd apps/api && python benchmark_load.py --users 5 --duration 10
+
+# ── Evals ───────────────────────────────────────────────────────────
+
+eval:
+	cd apps/api && python -m evals.harness
 
 # ── Housekeeping ────────────────────────────────────────────────────
 

@@ -21,6 +21,8 @@ from app.routes.projects import router as projects_router
 from app.routes.context import router as context_router
 from app.routes.analytics import router as analytics_router
 from app.routes.memories import router as memories_router
+from app.routes.feedback import router as feedback_router
+from app.routes.github import router as github_router
 from core.config import settings
 from core.database import DatabasePool
 from core.logging_config import setup_logging
@@ -193,6 +195,8 @@ app.include_router(projects_router, prefix="/api/v1")
 app.include_router(context_router, prefix="/api/v1")
 app.include_router(analytics_router, prefix="/api/v1")
 app.include_router(memories_router, prefix="/api/v1")
+app.include_router(feedback_router, prefix="/api/v1")
+app.include_router(github_router, prefix="/api/v1")
 
 
 @app.get("/api/v1/metrics")

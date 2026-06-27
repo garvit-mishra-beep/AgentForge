@@ -1,12 +1,11 @@
 import hashlib
 import json
-import os
 import re
 import shutil
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 
 from app.auth import require_user
 from core.config import settings
@@ -54,6 +53,21 @@ def _validate_filepath(storage_path: Path) -> None:
 
 def _db(request: Request):
     return request.app.state.db
+
+
+async def _require_project_owner(db, project_id: str, user_id: str) -> None:
+    """Raise 404 unless ``project_id`` exists and is owned by ``user_id``.
+
+    Closes the file-scoped IDOR: file routes filter by ``project_id`` only,
+    so without this check any authenticated user could reach another tenant's
+    project files by guessing/leaking ids.
+    """
+    owns = await db.fetchval(
+        "SELECT 1 FROM projects WHERE id = $1 AND created_by = $2",
+        project_id, user_id,
+    )
+    if not owns:
+        raise HTTPException(status_code=404, detail="Project not found")
 
 
 def _ensure_upload_dir(project_id: str):
@@ -311,8 +325,8 @@ async def upload_zip(
     file: UploadFile = File(...),
 ):
     """Upload and extract a ZIP archive into the project."""
-    import zipfile
     import io
+    import zipfile
 
     db = _db(request)
     project = await db.fetchrow(
@@ -434,6 +448,7 @@ async def get_file_metadata(
     user_id: str = Depends(require_user),
 ):
     db = _db(request)
+    await _require_project_owner(db, project_id, user_id)
     row = await db.fetchrow(
         """
         SELECT id, project_id, parent_id, filename, filepath, mime_type, size_bytes,
@@ -456,6 +471,7 @@ async def delete_file(
     user_id: str = Depends(require_user),
 ):
     db = _db(request)
+    await _require_project_owner(db, project_id, user_id)
     row = await db.fetchrow(
         "SELECT filepath FROM project_files WHERE id = $1 AND project_id = $2",
         file_id, project_id,
@@ -483,6 +499,7 @@ async def download_file(
     from fastapi.responses import FileResponse as FastAPIFileResponse
 
     db = _db(request)
+    await _require_project_owner(db, project_id, user_id)
     row = await db.fetchrow(
         """
         SELECT id, project_id, filename, filepath, mime_type, size_bytes
@@ -527,8 +544,8 @@ def _trigger_context_parse(db, file_id: uuid.UUID, filepath: str, filename: str)
             if not parsed.symbols and not parsed.imports:
                 return  # Not a code file
 
-            import uuid as _uuid
             import json
+            import uuid as _uuid
 
             ctx_id = str(_uuid.uuid4())
             await db.execute(

@@ -41,10 +41,13 @@ async def clean_tables(setup_db):
     tables = [
         "agent_memories", "project_files", "project_teams", "projects",
         "task_messages", "executions", "tasks",
-        "team_members", "teams", "api_keys",
+        "team_members", "teams", "api_keys", "refresh_tokens", "finding_feedback",
     ]
     for table in tables:
         await pool.execute(f"DELETE FROM {table}")
+    # Remove users created during tests (e.g. via /auth/register) so registration
+    # tests stay isolated; keep the seeded demo user.
+    await pool.execute("DELETE FROM users WHERE id != $1", DEMO_USER_ID)
 
 
 @pytest_asyncio.fixture(autouse=True)

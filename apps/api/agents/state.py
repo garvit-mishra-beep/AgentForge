@@ -24,11 +24,13 @@ class AgentState(TypedDict):
     task: TaskInfo
     team_config: dict[str, TeamMemberConfig]
     plan: str | None
+    planner_output: NotRequired[str | None]
     builder_output: str | None
     review: str | None
     tester_output: NotRequired[str | None]
     security_output: NotRequired[str | None]
     architect_output: NotRequired[str | None]
+    deployment_output: NotRequired[str | None]
     aggregator_output: NotRequired[str | None]
     delivery: str | None
     current_step: str
@@ -39,3 +41,9 @@ class AgentState(TypedDict):
     timed_out_agents: NotRequired[list[str]]
     repository_context: NotRequired[str]
     relevant_memories: NotRequired[list[dict[str, Any]]]
+    learned_signal: NotRequired[str]
+    # BYOK fields - user and project context for provider selection
+    user_id: NotRequired[str]
+    project_id: NotRequired[str]
+    # Database session (would be passed in a real implementation)
+    db: NotRequired[Any]

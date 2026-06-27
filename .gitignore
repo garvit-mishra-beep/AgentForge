@@ -9,6 +9,11 @@ apps/api/uploads/
 *_stdout.txt
 *_stderr.txt
 uvi_*.txt
+htmlcov/
+
+# Next.js
+apps/web/.next/
+apps/web/out/
 
 # Environment variables
 # Keep environment-specific variables out of version control.
@@ -21,6 +26,9 @@ uvi_*.txt
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
 # Build and distribution
 .turbo/

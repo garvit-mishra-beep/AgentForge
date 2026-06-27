@@ -81,6 +81,25 @@ def parse_json_output(text: str) -> dict | None:
         return None
 
 
+def parse_structured(text: str, model_cls):
+    """Extract JSON from ``text`` and validate it against a Pydantic model.
+
+    Returns a validated model instance, or ``None`` if the output is missing,
+    malformed, or fails validation. Callers supply a deterministic fallback so a
+    single bad LLM response never crashes the graph.
+    """
+    from pydantic import ValidationError
+
+    data = parse_json_output(text or "")
+    if data is None:
+        return None
+    try:
+        return model_cls.model_validate(data)
+    except ValidationError as e:
+        logger.warning("Agent output failed %s validation: %s", model_cls.__name__, e)
+        return None
+
+
 _PROMPT_ENV: Environment | None = None
 
 

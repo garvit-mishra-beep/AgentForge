@@ -1,0 +1,16 @@
+[project]
+name = "agentforge-cli"
+version = "0.1.0"
+description = "AgentForge command-line interface — Quick Review and tasks from the terminal"
+requires-python = ">=3.10"
+dependencies = ["httpx>=0.27"]
+
+[project.scripts]
+agentforge = "agentforge_cli.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["agentforge_cli"]

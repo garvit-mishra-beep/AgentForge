@@ -93,6 +93,54 @@ async def test_get_task_not_found(client):
 
 
 @pytest.mark.asyncio
+async def test_create_task_against_unowned_team_is_rejected(client):
+    """A user cannot target a team they do not own (IDOR #4)."""
+    import uuid as _uuid
+
+    from app.auth import create_token
+    from app.main import app
+    from httpx import ASGITransport, AsyncClient
+
+    # Attacker owns a valid, fully-staffed team of their own...
+    db = app.state.db
+    attacker_id = str(_uuid.uuid4())
+    await db.execute(
+        "INSERT INTO users (id, email, name, password_hash) VALUES ($1, $2, $3, $4)",
+        attacker_id, f"atk-{attacker_id[:8]}@e.com", "Atk", "x",
+    )
+    transport = ASGITransport(app=app)
+    async with AsyncClient(
+        transport=transport, base_url="http://test",
+        headers={"Authorization": f"Bearer {create_token(attacker_id)}"},
+    ) as attacker:
+        team = await attacker.post("/api/v1/teams", json={"name": "Atk Team"})
+        attacker_team = team.json()["id"]
+        for role in ["team_lead", "builder", "reviewer"]:
+            await attacker.post(
+                f"/api/v1/teams/{attacker_team}/members",
+                json={"role": role, "model": "qwen2.5-coder:7b"},
+            )
+
+        # ...but tries to create a task against the *demo* user's team.
+        victim_team = await client.post("/api/v1/teams", json={"name": "Victim Team"})
+        victim_team_id = victim_team.json()["id"]
+        for role in ["team_lead", "builder", "reviewer"]:
+            await client.post(
+                f"/api/v1/teams/{victim_team_id}/members",
+                json={"role": role, "model": "qwen2.5-coder:7b"},
+            )
+
+        resp = await attacker.post(
+            "/api/v1/tasks",
+            json={"team_id": victim_team_id, "title": "x", "description": "y"},
+        )
+        assert resp.status_code == 404
+
+    await db.execute("DELETE FROM teams WHERE created_by = $1", attacker_id)
+    await db.execute("DELETE FROM users WHERE id = $1", attacker_id)
+
+
+@pytest.mark.asyncio
 async def test_get_task_messages(client, team_with_roles):
     create_resp = await client.post(
         "/api/v1/tasks",

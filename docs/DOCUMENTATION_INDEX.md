@@ -49,16 +49,14 @@ docs/
 │   ├── ROADMAP.md                             # Release Roadmap
 │   └── V1_RELEASE_READINESS.md                # QA validation status
 │
-├── scripts/
-│   └── README.md                              # Scripts & Developer Utilities
+├── archive/                                   # Archived historical documents
+│   ├── AUDIT.md
+│   ├── BUGS.md
+│   ├── CLEANUP_PLAN_2026_06_26.md
+│   ├── PMF_EXECUTION_PLAN.md
+│   └── PRICING.md
 │
-├── tests/
-│   └── README.md                              # Global Test Suites Documentation
-│
-└── archive/                                   # Archived historical documents
-    ├── AUDIT.md
-    ├── BUGS.md
-    ├── CLEANUP_PLAN_2026_06_26.md
-    ├── PMF_EXECUTION_PLAN.md
-    └── PRICING.md
+└── External Modules:
+    ├── [scripts/README.md](file:///c:/Users/garvi/AgentForge/scripts/README.md)                      # Developer Automation Scripts (root/scripts/)
+    └── [apps/api/tests/README.md](file:///c:/Users/garvi/AgentForge/apps/api/tests/README.md)               # Backend API Test Suite Docs (apps/api/tests/)
 ```

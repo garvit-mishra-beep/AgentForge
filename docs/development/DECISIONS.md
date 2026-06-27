@@ -58,7 +58,7 @@ Use **FastAPI (Python)** for the backend API.
 
 ## ADR-003: Clerk over Auth.js / Supabase Auth
 
-**Status:** Accepted | **Date:** 2026-05-12
+**Status:** Superseded by ADR-009 | **Date:** 2026-05-12
 
 ### Context
 AgentForge needed authentication with: email/password, Google OAuth, GitHub OAuth, session management, JWT validation, organization support (Team plan multi-seat).
@@ -212,3 +212,24 @@ Use **Railway** for backend deployment.
 - **AWS (ECS Fargate)** — Operational overhead of setting up VPC, ALB, ECS task definitions, RDS, ElastiCache. Not justified for current scale.
 - **Heroku** — No native Docker support (requires container registry workaround). Fewer data center options. Higher cost per dyno.
 - **Fly.io** — Good Docker support but no managed Postgres at time of decision. Would need separate Postgres hosting.
+
+---
+
+## ADR-009: Local Auth Migration (PyJWT/bcrypt) over Clerk
+
+**Status:** Accepted | **Date:** 2026-06-25
+
+### Context
+Due to concerns about vendor lock-in, latency overhead of validating tokens against external APIs, pricing predictability, and tenant isolation, the platform required a self-contained local authentication system.
+
+### Decision
+Migrate authentication from Clerk to local database tables utilizing **bcrypt** for password hashing and **PyJWT** for token validation.
+
+### Rationale
+- **Performance** — Local JWT signature verification is sub-millisecond, eliminating external HTTP calls.
+- **Independence** — Removed third-party SaaS dependencies for the core user auth loop.
+- **Isolation** — Better tenant data separation filtering by `user_id` inside our own database schema.
+
+### Consequences
+- Frontend forms for sign-in/sign-up must be built locally (implemented in Next.js).
+- Password reset and email verification flows must be managed in-house.

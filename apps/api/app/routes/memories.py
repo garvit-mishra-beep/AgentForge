@@ -4,8 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.auth import require_user
 from app.memory_service import (
-    store_memory, get_memory, get_memories, get_relevant_memories,
-    update_memory, delete_memory,
+    delete_memory,
+    get_memories,
+    get_memory,
+    get_relevant_memories,
+    store_memory,
+    update_memory,
 )
 
 router = APIRouter(prefix="/memories", tags=["memories"])

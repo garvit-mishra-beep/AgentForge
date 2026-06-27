@@ -13,7 +13,7 @@
 - Task steps, messages, and output files
 
 ### Account Data
-- Name and email address (provided by Clerk during authentication)
+- Name and email address (provided during sign-up/authentication)
 - Account tier and billing information (processed by Stripe — AgentForge does not store full payment details)
 - User preferences (display name, avatar URL, theme preference)
 
@@ -35,7 +35,7 @@
 | Plaintext AI provider API keys | Encrypted at rest with AES-256; only decrypted in memory at execution time |
 | Raw WebSocket frame payloads after session end | Ephemeral — published to Redis pub/sub and delivered to browser; not persisted after session closes |
 | Browser fingerprints or behavioral analytics | Not collected beyond basic PostHog page views |
-| Passwords | Clerk handles authentication; AgentForge never receives or stores passwords |
+| Passwords | Hashed using bcrypt in our database; plaintext passwords are never stored |
 | Full credit card numbers | Stripe processes all payments; AgentForge stores only a payment method reference token |
 
 ---
@@ -62,14 +62,14 @@ You can request deletion of all your data:
 
 ```
 DELETE /api/v1/user/data
-Authorization: Bearer <clerk_jwt_token>
+Authorization: Bearer <jwt_access_token>
 ```
 
 This will:
 1. Delete all projects, teams, tasks, and outputs associated with your account
 2. Delete all agent memories associated with your projects
 3. Anonymize logs (replace user_id with a random hash)
-4. Trigger account deletion via Clerk webhook
+4. Delete user account from database
 5. Send confirmation email
 
 **Processing time:** Within 30 days of request.
@@ -80,7 +80,7 @@ You can export all your data:
 
 ```
 GET /api/v1/user/export
-Authorization: Bearer <clerk_jwt_token>
+Authorization: Bearer <jwt_access_token>
 ```
 
 Response is a JSON file containing:
@@ -133,7 +133,7 @@ After 30 days:
     ├── Delete all teams, agents, project configurations
     ├── Delete all agent memories and embeddings
     ├── Anonymize log entries (replace user_id with hash)
-    ├── Trigger Clerk account deletion
+    ├── Delete user account from database
     └── Send final deletion confirmation email
 ```
 
@@ -143,7 +143,6 @@ After 30 days:
 
 | Processor | Service | Data Shared | Location |
 |-----------|---------|-------------|----------|
-| Clerk | Authentication | Email, name, OAuth profile data | US |
 | Railway | Application hosting | All application data (PostgreSQL, Redis) | US (us-east-1) |
 | Vercel | CDN and frontend hosting | IP address, request headers | Global edge network |
 | OpenAI | AI inference (GPT-4o, GPT-4o-mini) | Task prompts and agent outputs | US |

@@ -19,7 +19,7 @@ async def call_with_retry(
     max_tokens: int | None = None,
     timeout_s: float | None = None,
 ) -> ChatResponse:
-    last_error: AIProviderError | None = None
+    last_error: Exception = Exception("Unknown provider error")
     for attempt in range(retries + 1):
         try:
             coro = provider.chat(
@@ -67,7 +67,7 @@ async def call_with_timeout(
             duration_ms=timeout_s * 1000,
             model=model,
         )
-        result._timed_out = True
+        setattr(result, "_timed_out", True)
         return result
 
 

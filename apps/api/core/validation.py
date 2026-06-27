@@ -1,4 +1,5 @@
 import re
+from typing import Any
 
 import httpx
 
@@ -38,18 +39,11 @@ SUPPORTED_PROVIDERS = {
         "auth_header": "Authorization",
         "auth_scheme": "Bearer",
     },
-    "ollama": {
-        "label": "Ollama",
-        "key_format": None,
-        "validate_url": None,
-        "auth_header": None,
-        "auth_scheme": None,
-    },
 }
 
 
 def validate_key_format(provider: str, key: str) -> tuple[bool, str]:
-    info = SUPPORTED_PROVIDERS.get(provider)
+    info: Any = SUPPORTED_PROVIDERS.get(provider)
     if not info:
         return False, f"Unknown provider: {provider}"
 
@@ -65,7 +59,7 @@ def validate_key_format(provider: str, key: str) -> tuple[bool, str]:
 
 
 async def validate_key_live(provider: str, key: str) -> tuple[bool, str]:
-    info = SUPPORTED_PROVIDERS.get(provider)
+    info: Any = SUPPORTED_PROVIDERS.get(provider)
     if not info:
         return False, f"Unknown provider: {provider}"
 

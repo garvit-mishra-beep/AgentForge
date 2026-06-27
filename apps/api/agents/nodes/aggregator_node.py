@@ -26,7 +26,7 @@ async def aggregator_node(state: AgentState) -> AgentState:
         state["messages"].append({
             "role": "aggregator",
             "model": "auto",
-            "content": state["aggregator_output"],
+            "content": state["aggregator_output"] or "",
             "message_type": "aggregator",
             "metadata": {"auto_aggregated": True},
         })
@@ -113,7 +113,7 @@ def _auto_aggregate(state: AgentState) -> str:
     all_findings: list[dict] = []
     overall = Verdict.passed
     for key, val in parts.items():
-        review = parse_structured(val, ReviewOutput)
+        review = parse_structured(val or "{}", ReviewOutput)
         if review is None:
             verdicts.append(f"{key}: unparseable")
             if overall != Verdict.failed:

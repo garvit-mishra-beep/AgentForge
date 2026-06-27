@@ -1,16 +1,15 @@
 """Concurrency and race condition tests."""
 
 import asyncio
-import time
 
 import pytest
 
 from core.redis import (
+    rate_limit_check,
+    rate_limit_reset,
     review_store_get,
     review_store_set,
     review_store_update,
-    rate_limit_check,
-    rate_limit_reset,
 )
 
 
@@ -79,7 +78,7 @@ async def test_rate_limiter_concurrent_access():
 @pytest.mark.asyncio
 async def test_inmem_store_max_entries():
     """In-memory store should not exceed MAX entries."""
-    from core.redis import _inmem_reviews, _INMEM_REVIEWS_MAX
+    from core.redis import _INMEM_REVIEWS_MAX, _inmem_reviews
 
     for i in range(_INMEM_REVIEWS_MAX + 100):
         await review_store_set(f"stress-{i}", {"id": i})

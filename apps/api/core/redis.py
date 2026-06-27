@@ -3,9 +3,7 @@
 import json
 import logging
 import time
-import uuid
-from collections import defaultdict, OrderedDict
-from typing import Optional
+from collections import OrderedDict, defaultdict
 
 from core.config import settings
 
@@ -13,10 +11,14 @@ logger = logging.getLogger(__name__)
 
 try:
     import redis.asyncio as aioredis
+    from redis.exceptions import WatchError
     _HAS_REDIS = True
 except ImportError:
     logger.warning("redis-py not installed, using in-memory fallback")
     _HAS_REDIS = False
+    class WatchError(Exception):  # type: ignore
+        pass
+
 
 
 # ── Pool ────────────────────────────────────────────────────────────────
@@ -67,7 +69,7 @@ async def review_store_set(review_id: str, data: dict) -> None:
     else:
         if len(_inmem_reviews) >= _INMEM_REVIEWS_MAX:
             _inmem_reviews.popitem(last=False)
-        _inmem_reviews[review_id] = data
+        _inmem_reviews[review_id] = json.loads(json.dumps(data, default=str))
 
 
 async def review_store_get(review_id: str) -> dict | None:
@@ -83,29 +85,53 @@ async def review_store_get(review_id: str) -> dict | None:
 async def review_store_update(review_id: str, data: dict) -> None:
     r = _redis()
     if r is not None:
-        pipeline = r.pipeline()
-        await pipeline.watch(f"{REVIEW_KEY_PREFIX}{review_id}")
-        existing = await pipeline.get(f"{REVIEW_KEY_PREFIX}{review_id}")
-        if existing is not None:
-            parsed = json.loads(existing)
-            parsed.update(data)
-            await pipeline.multi()
-            await pipeline.setex(
-                f"{REVIEW_KEY_PREFIX}{review_id}", REVIEW_TTL,
-                json.dumps(parsed, default=str),
-            )
-            await pipeline.execute()
+        async with r.pipeline(transaction=True) as pipeline:
+            while True:
+                try:
+                    await pipeline.watch(f"{REVIEW_KEY_PREFIX}{review_id}")
+                    existing = await pipeline.get(f"{REVIEW_KEY_PREFIX}{review_id}")
+                    if existing is not None:
+                        parsed = json.loads(existing)
+                        parsed.update(data)
+                    else:
+                        parsed = data
+                    pipeline.multi()
+                    pipeline.setex(
+                        f"{REVIEW_KEY_PREFIX}{review_id}", REVIEW_TTL,
+                        json.dumps(parsed, default=str),
+                    )
+                    await pipeline.execute()
+                    break
+                except WatchError:
+                    continue
         return
-    existing = _inmem_reviews.get(review_id)
-    if existing is not None:
-        existing.update(data)
+    existing_mem = _inmem_reviews.get(review_id)
+    if existing_mem is not None:
+        existing_mem.update(json.loads(json.dumps(data, default=str)))
+    else:
+        if len(_inmem_reviews) >= _INMEM_REVIEWS_MAX:
+            _inmem_reviews.popitem(last=False)
+        _inmem_reviews[review_id] = json.loads(json.dumps(data, default=str))
 
 
 async def review_store_cleanup() -> None:
     """No-op for Redis (TTL handles it). Clean in-memory stale entries."""
+    from datetime import datetime
     now = time.time()
-    stale = [rid for rid, d in _inmem_reviews.items()
-             if d.get("completed_at") and now - d["completed_at"] > REVIEW_TTL]
+    stale = []
+    for rid, d in list(_inmem_reviews.items()):
+        comp = d.get("completed_at")
+        if comp:
+            try:
+                if isinstance(comp, str):
+                    # Replace Z with +00:00 to support older python fromisoformat
+                    comp_t = datetime.fromisoformat(comp.replace("Z", "+00:00")).timestamp()
+                else:
+                    comp_t = float(comp)
+                if now - comp_t > REVIEW_TTL:
+                    stale.append(rid)
+            except Exception:
+                stale.append(rid)
     for rid in stale:
         _inmem_reviews.pop(rid, None)
 
@@ -133,7 +159,7 @@ async def rate_limit_check(ip: str, limit: int = 10, window: int = 3600, key_pre
         count = results[1]
         if count >= limit:
             return False
-        await r.zadd(key, {int(now): now})
+        await r.zadd(key, {str(int(now)): now})
         await r.expire(key, window)
         return True
     else:
@@ -177,7 +203,7 @@ async def failed_login_attempt(identifier: str, lockout_seconds: int = 900) -> i
         pipe.zcard(key)
         results = await pipe.execute()
         count = results[1] + 1
-        await r.zadd(key, {int(now * 1000): now})
+        await r.zadd(key, {str(int(now * 1000)): now})
         await r.expire(key, lockout_seconds)
         return count
     _INMEM_BF[identifier] = [t for t in _INMEM_BF[identifier] if t > cutoff]

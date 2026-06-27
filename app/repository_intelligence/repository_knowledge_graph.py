@@ -508,12 +508,12 @@ class RepositoryKnowledgeGraph:
                     if record['modifiers']:
                         try:
                             record['modifiers'] = json.loads(record['modifiers'])
-                        except:
+                        except Exception:
                             pass
                     if record['parameters']:
                         try:
                             record['parameters'] = json.loads(record['parameters'])
-                        except:
+                        except Exception:
                             pass
                     results.append(record)
 

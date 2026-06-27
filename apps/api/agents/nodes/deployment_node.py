@@ -19,7 +19,14 @@ async def deployment_node(state: AgentState) -> AgentState:
     db = state.get("db")  # Database session would be passed in state in a real implementation
 
     # Get the model for the deployment agent (fall back to team_lead model or settings default if not specified)
-    model = state["team_config"].get("deployment", {}).get("model", state["team_config"].get("team_lead", {}).get("model", "qwen2.5-coder:7b"))
+    dep_config = state["team_config"].get("deployment")
+    tl_config = state["team_config"].get("team_lead")
+    if dep_config and "model" in dep_config:
+        model = dep_config["model"]
+    elif tl_config and "model" in tl_config:
+        model = tl_config["model"]
+    else:
+        model = "qwen2.5-coder:7b"
 
     # Try to get user-specific provider configuration
     provider = None

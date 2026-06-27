@@ -40,7 +40,7 @@
 │  │       │             │                    │              │             │
 │  │  ┌────┴─────────────┴────────────────────┴──────────┐  │             │
 │  │  │              Core Services                        │  │             │
-│  │  │  Auth (Clerk) │ DB (asyncpg) │ Redis (redis-py)  │  │             │
+│  │  │  Auth (JWT)   │ DB (asyncpg) │ Redis (redis-py)  │  │             │
 │  │  │  AI Providers │ Model Registry │ Memory Service   │  │             │
 │  │  └──────────────────────────────────────────────────┘  │             │
 │  └───────────────────────────────────────────────────────┘              │
@@ -77,14 +77,14 @@
 | `components/AgentMessage.tsx` | Client | Renders single agent output with role badge and model label |
 | `components/OutputPanel.tsx` | Client | Displays generated files with syntax-highlighted diff viewer |
 | `components/TeamGrid.tsx` | Client | Drag-and-drop grid for role↔model assignment |
-| `lib/api-client.ts` | Shared | Typed fetch wrapper with Clerk JWT injection |
+| `lib/api-client.ts` | Shared | Typed fetch wrapper with Bearer JWT injection |
 | `lib/ws-client.ts` | Shared | WebSocket client with auto-reconnect and event dispatch |
 
 ### Backend (apps/api)
 
 | Module | Purpose |
 |--------|---------|
-| `app/routes/auth.py` | Clerk JWT verification endpoint |
+| `app/routes/auth.py` | Local auth and JWT generation endpoint |
 | `app/routes/projects.py` | Project CRUD |
 | `app/routes/teams.py` | Team and agent assignment CRUD |
 | `app/routes/tasks.py` | Task creation, status polling, history |
@@ -92,7 +92,7 @@
 | `agents/graph.py` | LangGraph state graph definition (nodes, edges, conditional routing) |
 | `agents/nodes/` | Individual agent step implementations (team_lead, backend, reviewer, qa, security, devops) |
 | `agents/orchestrator.py` | High-level orchestrator — creates graph, invokes with state, handles errors |
-| `core/auth.py` | FastAPI middleware — Clerk JWT validation, user_id extraction |
+| `app/auth.py` | FastAPI middleware — JWT validation, user_id extraction |
 | `core/database.py` | asyncpg connection pool setup |
 | `core/redis.py` | Redis client and pub/sub manager |
 | `core/model_registry.py` | Supported models, context windows, rate limits |
@@ -274,7 +274,7 @@ graph.set_entry_point("team_lead_plan")
 |----------|-----------|
 | LangGraph over raw agent loop | Explicit DAG, state persistence, conditional routing, human-in-the-loop interrupts |
 | FastAPI over Express | Python ecosystem for LangGraph + AI SDKs; async WebSocket support |
-| Clerk over Auth.js | Hosted UI, organization management for Team plan; webhook lifecycle events |
+| PyJWT with bcrypt | Local user credentials and session tokens; no dependency on external auth services |
 | PostgreSQL over MongoDB | Relational data (projects→teams→agents→tasks→steps); pgvector for semantic search |
 | Redis pub/sub over polling | Sub-millisecond event propagation; native pub/sub channels per task |
 | WebSockets over SSE | Bidirectional communication needed for human approval signals |

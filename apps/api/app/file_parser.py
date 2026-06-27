@@ -5,10 +5,8 @@ Parses code files to extract symbols, imports, and chunks.
 
 import ast
 import re
-import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 LANGUAGE_MAP = {
     ".py": "python",

@@ -2,26 +2,16 @@
 
 import json
 import logging
-from typing import Dict, Any
 
-from fastapi import APIRouter, HTTPException, Request, BackgroundTasks, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.integrations.github import handle_pull_request_event, verify_webhook_signature
-from app.integrations.github_enhanced import (
-    handle_repository_webhook as enhanced_handle_repo_webhook,
-    review_pull_request as enhanced_review_pr,
-    synchronize_repository as enhanced_sync_repo
-)
-from app.integrations.github_enhanced import (
-    github_app_manager,
-    enhanced_pr_reviewer,
-    repository_synchronizer
-)
+from app.integrations.github_enhanced import review_pull_request as enhanced_review_pr
+from app.integrations.github_enhanced import synchronize_repository as enhanced_sync_repo
 from core.config import settings
 from core.dependencies import get_db
 from core.observability import emit
-from core.task_tracker import tracker
 
 logger = logging.getLogger(__name__)
 

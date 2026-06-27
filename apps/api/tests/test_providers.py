@@ -3,10 +3,9 @@
 import pytest
 
 from core.providers import (
-    OpenAIProvider,
     AnthropicProvider,
     GoogleProvider,
-    OllamaProvider,
+    OpenAIProvider,
     get_provider,
 )
 
@@ -35,15 +34,7 @@ def test_provider_google():
     assert isinstance(provider, GoogleProvider)
 
 
-def test_provider_ollama():
-    provider = get_provider("llama3.2:3b")
-    assert isinstance(provider, OllamaProvider)
 
-    provider = get_provider("qwen2.5-coder:7b")
-    assert isinstance(provider, OllamaProvider)
-
-    provider = get_provider("deepseek-coder:6.7b")
-    assert isinstance(provider, OllamaProvider)
 
 
 def test_provider_unknown():
@@ -62,8 +53,8 @@ def test_provider_case_insensitive():
 @pytest.mark.asyncio
 async def test_openai_provider_throws_on_no_key():
     """OpenAIProvider should wrap connection errors."""
-    from core.providers import OpenAIProvider, AIProviderError
     from core.config import settings
+    from core.providers import AIProviderError, OpenAIProvider
     old_key = settings.openai_api_key
     settings.openai_api_key = "sk-test-bad-key"
     provider = OpenAIProvider()
@@ -81,8 +72,8 @@ async def test_openai_provider_throws_on_no_key():
 @pytest.mark.asyncio
 async def test_anthropic_provider_throws_on_no_key():
     """AnthropicProvider should wrap connection errors."""
-    from core.providers import AnthropicProvider, AIProviderError
     from core.config import settings
+    from core.providers import AIProviderError, AnthropicProvider
     old_key = settings.anthropic_api_key
     settings.anthropic_api_key = "sk-ant-test-bad"
     provider = AnthropicProvider()
@@ -99,8 +90,8 @@ async def test_anthropic_provider_throws_on_no_key():
 @pytest.mark.asyncio
 async def test_google_provider_throws_on_no_key():
     """GoogleProvider should wrap connection errors."""
-    from core.providers import GoogleProvider, AIProviderError
     from core.config import settings
+    from core.providers import AIProviderError, GoogleProvider
     old_key = settings.google_api_key
     settings.google_api_key = "AIza-test-bad"
     provider = GoogleProvider()
@@ -114,25 +105,9 @@ async def test_google_provider_throws_on_no_key():
     settings.google_api_key = old_key
 
 
-@pytest.mark.asyncio
-async def test_ollama_provider_connection_refused():
-    """OllamaProvider should handle connection refused gracefully."""
-    from core.providers import OllamaProvider, AIProviderError
-    from core.config import settings
-    old_url = settings.ollama_base_url
-    settings.ollama_base_url = "http://localhost:1"
-    provider = OllamaProvider()
-    try:
-        await provider.chat("llama3.2:3b", "system", "hello", timeout_s=1)
-        assert False, "Should have raised"
-    except AIProviderError as e:
-        assert "ollama" in str(e.provider)
-    except Exception:
-        pass  # Connection refused may surface differently
-    settings.ollama_base_url = old_url
+
 
 
 def test_get_provider_with_prefix():
-    from core.providers import get_provider, OpenAIProvider, OllamaProvider
+    from core.providers import OpenAIProvider, get_provider
     assert isinstance(get_provider("openai/gpt-4"), OpenAIProvider)
-    assert isinstance(get_provider("ollama/llama3.2:3b"), OllamaProvider)

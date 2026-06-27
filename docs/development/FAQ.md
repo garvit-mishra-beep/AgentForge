@@ -77,7 +77,7 @@ To retrieve: `GET /api/v1/tasks/{id}/output` returns all files, `GET /api/v1/tas
 
 ### 11. What is the human-in-the-loop model?
 
-The human is not replaced — the human is elevated. The human's role shifts from writing code to managing an AI engineering team. The human: creates projects, assembles the team, writes task descriptions, monitors live execution, approves/rejects deliverables, and requests revisions. The AI agents do all implementation, review, testing, and audit work. See [PRD.md](PRD.md#human-in-the-loop-model).
+The human is not replaced — the human is elevated. The human's role shifts from writing code to managing an AI engineering team. The human: creates projects, assembles the team, writes task descriptions, monitors live execution, approves/rejects deliverables, and requests revisions. The AI agents do all implementation, review, testing, and audit work. See [PRD.md](../product/PRD.md#human-in-the-loop-model).
 
 ### 12. How are API keys for AI providers secured?
 
@@ -100,7 +100,7 @@ When Redis recovers, WebSocket streaming resumes (new connections will work).
 
 ### 14. How does the confidence score work?
 
-After each agent step, the agent includes a `confidence` score (0.0–1.0) in its output. This is the model's self-assessment of its output correctness. The system enforces minimum confidence thresholds per role (0.6 for Team Lead/QA, 0.7 for Backend/Frontend/Security/DevOps). Below-threshold outputs trigger a retry. The confidence score is not a technical metric — it is a heuristic based on the model's own certainty. See [HALLUCINATION_GUARD.md](HALLUCINATION_GUARD.md#layer-2-confidence-score-system).
+After each agent step, the agent includes a `confidence` score (0.0–1.0) in its output. This is the model's self-assessment of its output correctness. The system enforces minimum confidence thresholds per role (0.6 for Team Lead/QA, 0.7 for Backend/Frontend/Security/DevOps). Below-threshold outputs trigger a retry. The confidence score is not a technical metric — it is a heuristic based on the model's own certainty. See [HALLUCINATION_GUARD.md](../architecture/HALLUCINATION_GUARD.md#layer-2-confidence-score-system).
 
 ### 15. Can I use AgentForge for non-code tasks (documentation, planning, etc.)?
 

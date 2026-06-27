@@ -20,8 +20,7 @@ function buildModelsFromEnabledProviders(apiKeys: ApiKey[]): { name: string; siz
   const enabled: ProviderName[] = apiKeys
     .filter((k) => k.is_enabled)
     .map((k) => k.provider as ProviderName);
-  // Ollama is always available (no key needed)
-  if (!enabled.includes("ollama")) enabled.push("ollama");
+
 
   const models: { name: string; size: string; tag: string; provider: string }[] = [];
   for (const provider of enabled) {

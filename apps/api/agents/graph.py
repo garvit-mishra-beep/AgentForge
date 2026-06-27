@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from langgraph.graph import END, StateGraph
 
@@ -17,7 +18,7 @@ from agents.state import AgentState
 logger = logging.getLogger(__name__)
 
 
-def _route_after_builder(state: AgentState) -> list[str]:
+def _route_after_builder(state: Any) -> list[Any]:
     """Route to appropriate validation nodes after builder completes."""
     targets = []
     if "reviewer" in state["team_config"]:
@@ -29,7 +30,7 @@ def _route_after_builder(state: AgentState) -> list[str]:
     return targets
 
 
-def build_graph() -> StateGraph:
+def build_graph() -> Any:
     workflow = StateGraph(state_schema=AgentState)
 
     # Core sequence with evidence validation checkpoints

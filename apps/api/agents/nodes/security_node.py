@@ -1,5 +1,5 @@
-import json
 import logging
+from typing import Any
 
 from agents.sanitize import wrap_context, wrap_task
 from agents.state import AgentState
@@ -10,7 +10,7 @@ from core.providers import get_provider, get_provider_for_user
 logger = logging.getLogger(__name__)
 
 
-async def security_node(state: AgentState) -> AgentState:
+async def security_node(state: AgentState) -> dict[str, Any]:
     logger.info("Security review phase")
 
     if "security" not in state["team_config"]:

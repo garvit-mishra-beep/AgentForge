@@ -312,7 +312,7 @@ async def upload_file(
         file_record_id,
     )
 
-    _trigger_context_parse(db, file_record_id, str(row["filepath"]), str(row["filename"]))
+    _trigger_context_parse(db, uuid.UUID(file_record_id), str(row["filepath"]), str(row["filename"]))
 
     return _row_to_file_response(row)
 
@@ -527,7 +527,6 @@ async def download_file(
 
 def _trigger_context_parse(db, file_id: uuid.UUID, filepath: str, filename: str):
     """Asynchronously parse file context after upload."""
-    import asyncio
 
     async def _parse():
         try:
@@ -595,7 +594,8 @@ def _trigger_context_parse(db, file_id: uuid.UUID, filepath: str, filename: str)
             import logging
             logging.getLogger(__name__).warning("Auto-parse failed for %s: %s", filename, e)
 
-    asyncio.create_task(_parse())
+    from core.task_tracker import tracker
+    tracker.create_task(_parse(), name=f"parse-{str(file_id)[:8]}")
 
 
 async def _get_project_by_id(db, project_id: str, user_id: str) -> ProjectResponse | None:

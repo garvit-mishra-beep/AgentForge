@@ -1,10 +1,9 @@
 """Tests for API key validation."""
 
-import pytest
 
 from core.validation import (
-    validate_key_format,
     SUPPORTED_PROVIDERS,
+    validate_key_format,
 )
 
 
@@ -48,11 +47,6 @@ def test_groq_key_format_valid():
     assert valid is True
 
 
-def test_ollama_no_key_required():
-    valid, msg = validate_key_format("ollama", "")
-    assert valid is True
-
-
 def test_unknown_provider():
     valid, msg = validate_key_format("unknown", "some-key")
     assert valid is False
@@ -68,5 +62,5 @@ def test_key_stripped():
 
 def test_all_providers_listed():
     """All supported providers should have entries."""
-    expected = {"openai", "anthropic", "google", "openrouter", "groq", "ollama"}
+    expected = {"openai", "anthropic", "google", "openrouter", "groq"}
     assert set(SUPPORTED_PROVIDERS.keys()) == expected

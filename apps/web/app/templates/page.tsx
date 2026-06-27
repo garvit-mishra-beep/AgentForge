@@ -33,9 +33,9 @@ export default function TemplatesPage() {
   ].filter((g) => g.templates.length > 0);
 
   const defaultTemplates = !templates.length ? [
-    { id: "1", name: "Software Engineering Team", description: "Full-stack development with planning, coding, and review", category: "engineering", roles: [{ role: "team_lead" as AgentRole, model: "qwen3.5:4b" }, { role: "builder" as AgentRole, model: "qwen2.5-coder:7b" }, { role: "reviewer" as AgentRole, model: "phi4-mini" }, { role: "tester" as AgentRole, model: "qwen3:4b" }] },
-    { id: "2", name: "Startup MVP Team", description: "Fast prototyping with lean models for quick iterations", category: "startup", roles: [{ role: "team_lead" as AgentRole, model: "qwen3:4b" }, { role: "builder" as AgentRole, model: "qwen2.5-coder:3b" }, { role: "reviewer" as AgentRole, model: "phi3:latest" }] },
-    { id: "3", name: "Code Review Team", description: "Focus on code quality with strong review and testing", category: "engineering", roles: [{ role: "team_lead" as AgentRole, model: "qwen3.5:4b" }, { role: "builder" as AgentRole, model: "qwen2.5-coder:7b" }, { role: "reviewer" as AgentRole, model: "gemma3:4b" }] },
+    { id: "1", name: "Software Engineering Team", description: "Full-stack development with planning, coding, and review", category: "engineering", roles: [{ role: "team_lead" as AgentRole, model: "gpt-4o-mini" }, { role: "builder" as AgentRole, model: "gpt-4o" }, { role: "reviewer" as AgentRole, model: "gpt-4o-mini" }, { role: "tester" as AgentRole, model: "gpt-4o-mini" }] },
+    { id: "2", name: "Startup MVP Team", description: "Fast prototyping with lean models for quick iterations", category: "startup", roles: [{ role: "team_lead" as AgentRole, model: "gpt-4o-mini" }, { role: "builder" as AgentRole, model: "gpt-4o-mini" }, { role: "reviewer" as AgentRole, model: "gpt-4o-mini" }] },
+    { id: "3", name: "Code Review Team", description: "Focus on code quality with strong review and testing", category: "engineering", roles: [{ role: "team_lead" as AgentRole, model: "gpt-4o-mini" }, { role: "builder" as AgentRole, model: "gpt-4o" }, { role: "reviewer" as AgentRole, model: "gpt-4o-mini" }] },
   ] : templates;
 
   return (

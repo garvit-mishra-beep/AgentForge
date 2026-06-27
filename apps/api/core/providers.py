@@ -1,13 +1,13 @@
 import logging
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Optional, Tuple
-import httpx
-from sqlalchemy.ext.asyncio import AsyncSession
+from dataclasses import dataclass
+from typing import Any
 
-from core.config import settings
+import httpx
+
 from app.routes.keys import get_user_api_key
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,10 @@ class AIProviderError(Exception):
         self.provider = provider
         self.model = model
         super().__init__(f"[{provider}:{model}] {message}")
+
+
+class ConfigurationError(ValueError):
+    pass
 
 
 @dataclass
@@ -251,62 +255,7 @@ class GoogleProvider(AIProvider):
             raise AIProviderError("google", model, str(e)) from e
 
 
-# ── Ollama ─────────────────────────────────────────────────────────────
 
-class OllamaProvider(AIProvider):
-    def __init__(self, config: ProviderConfig | None = None):
-        self.config = config
-
-    async def chat(
-        self,
-        model: str,
-        system_prompt: str,
-        user_message: str,
-        max_tokens: int | None = None,
-        timeout_s: float | None = None,
-    ) -> ChatResponse:
-        options = {"temperature": 0.2}
-        if max_tokens is not None:
-            options["num_predict"] = max_tokens
-
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message},
-            ],
-            "stream": False,
-            "options": options,
-        }
-        start = time.monotonic()
-        try:
-            client = _get_client(timeout=timeout_s or 300.0)
-            base_url = (self.config.base_url if (self.config and self.config.base_url) else settings.ollama_base_url).rstrip("/")
-            response = await client.post(f"{base_url}/api/chat", json=payload)
-            response.raise_for_status()
-            data = response.json()
-            duration_ms = (time.monotonic() - start) * 1000
-
-            content = data.get("message", {}).get("content", "")
-
-            usage = None
-            eval_count = data.get("eval_count")
-            prompt_eval_count = data.get("prompt_eval_count")
-            if eval_count is not None or prompt_eval_count is not None:
-                usage = {
-                    "prompt_tokens": prompt_eval_count or 0,
-                    "completion_tokens": eval_count or 0,
-                    "total_tokens": (prompt_eval_count or 0) + (eval_count or 0),
-                }
-
-            return ChatResponse(
-                content=content,
-                token_usage=usage,
-                duration_ms=duration_ms,
-                model=model,
-            )
-        except Exception as e:
-            raise AIProviderError("ollama", model, str(e)) from e
 
 
 # ── OpenAI Compatible (Groq, OpenRouter, etc.) ──────────────────────────
@@ -381,8 +330,6 @@ def create_provider(provider_type: str, config: ProviderConfig | None = None) ->
         return AnthropicProvider(config)
     elif provider_type == "google":
         return GoogleProvider(config)
-    elif provider_type == "ollama":
-        return OllamaProvider(config)
     elif provider_type in ["openrouter", "groq", "openai-compatible"]:
         return OpenAICompatibleProvider(config)
     else:
@@ -399,9 +346,7 @@ def get_provider_from_model(model: str) -> str:
         return "anthropic"
     elif model_lower.startswith("google/") or "gemini-" in model_lower or "palm-" in model_lower:
         return "google"
-    elif model_lower.startswith("ollama/") or (":" in model_lower and not "/" in model_lower):
-        # Ollama models often have format like "llama3.2:3b" or "codellama:34b"
-        return "ollama"
+
     elif any(provider in model_lower for provider in ["openrouter", "groq"]):
         if "openrouter" in model_lower:
             return "openrouter"
@@ -410,7 +355,7 @@ def get_provider_from_model(model: str) -> str:
     elif "/" in model_lower:
         # Handle format like "provider/model-name"
         provider_part = model_lower.split("/")[0]
-        if provider_part in ["openai", "anthropic", "google", "ollama", "openrouter", "groq"]:
+        if provider_part in ["openai", "anthropic", "google", "openrouter", "groq"]:
             return provider_part
 
     # Default fallback
@@ -421,8 +366,8 @@ async def get_provider_for_user(
     model: str,
     user_id: str,
     project_id: str | None = None,
-    db: AsyncSession = None
-) -> Tuple[AIProvider, str]:
+    db: Any = None
+) -> tuple[AIProvider, str]:
     """
     Get a provider instance for a specific user and project.
     Returns (provider_instance, provider_type) tuple.
@@ -451,14 +396,9 @@ async def get_provider_for_user(
         elif provider_type == "google" and settings.google_api_key:
             config = ProviderConfig(api_key=settings.google_api_key)
             return create_provider(provider_type, config), provider_type
-        elif provider_type == "ollama":
-            config = ProviderConfig(
-                api_key="",  # Ollama doesn't need an API key
-                base_url=settings.ollama_base_url
-            )
-            return create_provider(provider_type, config), provider_type
-
-        raise ValueError(f"No API key found for provider {provider_type} and no global fallback available")
+        raise ConfigurationError(
+            "No provider configured for this model."
+        )
 
     # Get endpoint configuration if available
     endpoint_config = await get_user_endpoint_config(
@@ -476,7 +416,7 @@ async def get_provider_for_user(
 
 
 async def get_user_endpoint_config(
-    db: AsyncSession,
+    db: Any,
     user_id: str,
     provider: str,
     project_id: str | None
@@ -513,7 +453,7 @@ async def get_user_endpoint_config(
 
 # Helper functions for checking if this is the first key/endpoint
 async def _is_first_key_for_user_provider(
-    db: AsyncSession, user_id: str, provider: str, project_id: str | None
+    db: Any, user_id: str, provider: str, project_id: str | None
 ) -> bool:
     """Check if this is the first key for user/provider/project."""
     query = """
@@ -534,7 +474,7 @@ async def _is_first_key_for_user_provider(
 
 
 async def _is_first_endpoint_for_user_provider(
-    db: AsyncSession, user_id: str, provider: str, project_id: str | None
+    db: Any, user_id: str, provider: str, project_id: str | None
 ) -> bool:
     """Check if this is the first endpoint for user/provider/project."""
     query = """
@@ -570,12 +510,6 @@ def get_provider(model: str) -> AIProvider:
         return create_provider(provider_type, config)
     elif provider_type == "google":
         config = ProviderConfig(api_key=settings.google_api_key or "AIza-dummy")
-        return create_provider(provider_type, config)
-    elif provider_type == "ollama":
-        config = ProviderConfig(
-            api_key="",  # Ollama doesn't need an API key
-            base_url=settings.ollama_base_url
-        )
         return create_provider(provider_type, config)
     elif provider_type in ["openrouter", "groq", "openai-compatible"]:
         config = ProviderConfig(api_key=settings.openai_api_key or "sk-dummy")

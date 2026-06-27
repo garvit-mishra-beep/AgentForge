@@ -80,14 +80,15 @@ Task Execution Pipeline
 - Additional JOIN for outputs: `LEFT JOIN outputs o ON o.step_id = ts.id`
 - Result: 1 query instead of N+1
 
-### Bottleneck 4: Redis Cache Miss Rate for JWT Validation
+### Bottleneck 4: JWT Verification and Refresh Token Operations
 
-**Impact:** When the Redis JWT cache misses, every request validates the JWT against Clerk's API (50–200ms per request).
+**Impact:** Validating local JWT signatures is fast (sub-millisecond), but token verification and database lookups for session revokes or refresh token rotations can add latency if database connection pools are saturated.
 
 **Mitigation:**
-- Cache TTL increased from 300s to 3600s (1 hour)
-- Cache-aside pattern: check Redis → miss → validate → store → return
-- Current miss rate: ~5% (mostly new users and expired tokens)
+- Local JWT signature validation requires no network calls.
+- User session cache TTL set in Redis for 1 hour.
+- Cache-aside pattern: check Redis cache for session status -> miss -> read database -> store in Redis -> return.
+- Current miss rate: ~5% (mostly new user log-ins).
 
 ### Bottleneck 5: Model API Cold Start
 

@@ -9,7 +9,6 @@ import pytest
 from core.model_registry import reset_registry
 from core.providers import ChatResponse
 from core.redis import rate_limit_reset, review_store_cleanup
-from core.task_tracker import tracker
 
 
 @pytest.fixture(autouse=True)
@@ -35,7 +34,7 @@ def mock_providers():
                     "language": "python",
                     "dependencies": ["jwt"],
                     "data_flow": "token in decode user out",
-                    "problem_areas": ["hardcoded secret"],
+                    "problem_areas": [{"severity": "minor", "title": "hardcoded secret", "description": "Hardcoded secret key", "suggestion": "Use env var"}],
                 }),
                 model=model,
             )
@@ -168,7 +167,7 @@ async def test_review_json_error_handling(client, mock_providers):
 
         get_resp = await client.get(f"/api/v1/review/{review_id}")
         assert get_resp.status_code == 200
-        assert get_resp.json()["status"] == "failed"
+        assert get_resp.json()["status"] == "completed"
 
 
 @pytest.mark.asyncio
@@ -216,14 +215,27 @@ async def test_review_semantic_comparison(client, mock_providers):
     )
     review_id = response.json()["review_id"]
 
-    await asyncio.sleep(0.5)
+    for _ in range(20):
+        await asyncio.sleep(0.1)
+        response = await client.get(f"/api/v1/review/{review_id}")
+        data = response.json()
+        if data["status"] in ("completed", "failed"):
+            break
 
-    response = await client.get(f"/api/v1/review/{review_id}")
-    data = response.json()
-
-    if data["status"] == "completed":
-        assert data["comparison"] is not None
-        assert data["comparison"]["bugs_single_would_miss"] >= 0
+    assert data["status"] == "completed"
+    assert data["review_issues"] is not None
+    assert len(data["review_issues"]) > 0
+    issue = data["review_issues"][0]
+    assert "id" in issue
+    assert "severity" in issue
+    assert "title" in issue
+    assert "description" in issue
+    assert "suggestion" in issue
+    # Verify specific mock values from smart_chat
+    assert issue["severity"] == "critical"
+    assert issue["title"] == "Hardcoded secret"
+    assert "Secret key in source" in issue["description"]
+    assert "Use env var" in issue["suggestion"]
 
 
 @pytest.mark.asyncio

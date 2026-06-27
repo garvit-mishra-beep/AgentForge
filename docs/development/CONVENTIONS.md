@@ -160,9 +160,9 @@ type(scope): short description
 ### Examples (from this codebase)
 
 ```
-feat(api): add JWT verification endpoint with Clerk middleware
+feat(api): add JWT verification endpoint with local auth middleware
 
-Implement POST /api/v1/auth/verify that validates Clerk JWTs,
+Implement POST /api/v1/auth/verify that validates session JWTs,
 extracts user_id, and returns user profile data.
 
 fix(ws): add ping/pong keepalive to prevent silent disconnection after 5 min

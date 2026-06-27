@@ -26,7 +26,7 @@ cd AgentForge
 ### Step 2: Initialize Infrastructure
 The easiest way to boot local PostgreSQL and Redis is via Docker Compose:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 This spins up:
 * PostgreSQL 16 on port `5432` with the `vector` extension auto-enabled.

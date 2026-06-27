@@ -15,6 +15,7 @@ extend-include = ["*.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
+ignore = ["E501", "E402", "UP038"]
 
 [tool.coverage.run]
 source = ["app", "core", "agents", "models"]
@@ -33,4 +34,12 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
+]
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = [
+    '^venv/',
+    '^\.venv/',
+    '^node_modules/',
 ]

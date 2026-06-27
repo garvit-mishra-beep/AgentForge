@@ -98,7 +98,7 @@ export const EXECUTION_STEPS = [
   { node: "team_lead_deliver", agent: "team_lead" as AgentRole, label: "Deliver" },
 ];
 
-export type ProviderName = "openai" | "anthropic" | "google" | "openrouter" | "groq" | "ollama";
+export type ProviderName = "openai" | "anthropic" | "google" | "openrouter" | "groq";
 
 export interface ProviderConfig {
   label: string;
@@ -152,23 +152,6 @@ export const PROVIDER_CONFIG: Record<ProviderName, ProviderConfig> = {
       { name: "llama-3.3-70b-versatile", size: "70B", tag: "Best" },
     ],
     color: "var(--color-deliver)",
-  },
-  ollama: {
-    label: "Ollama",
-    icon: Code2,
-    models: [
-      { name: "qwen3.5:4b", size: "4B", tag: "Fast" },
-      { name: "qwen2.5-coder:7b", size: "7B", tag: "Best for code" },
-      { name: "phi4-mini", size: "~3.8B", tag: "Lightweight" },
-      { name: "qwen3", size: "8B", tag: "Balanced" },
-      { name: "deepseek-r1", size: "7B", tag: "Reasoning" },
-      { name: "gemma3", size: "4B", tag: "Google" },
-      { name: "llama3.2:3b", size: "3B", tag: "Meta" },
-      { name: "mistral:7b", size: "7B", tag: "Mistral" },
-      { name: "phi3:latest", size: "3.8B", tag: "Small" },
-      { name: "qwen2.5-coder:3b", size: "3B", tag: "Tiny" },
-    ],
-    color: "var(--color-lead)",
   },
 };
 

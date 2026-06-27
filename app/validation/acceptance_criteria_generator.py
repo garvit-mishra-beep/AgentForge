@@ -3,6 +3,7 @@ Acceptance Criteria Generator for AgentForge.
 Generates acceptance criteria from user stories, requirements, or descriptions.
 """
 import re
+import json
 from typing import List, Dict, Any, Optional
 from .core import AcceptanceCriteria
 import uuid

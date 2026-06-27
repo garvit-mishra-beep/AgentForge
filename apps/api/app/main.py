@@ -1,5 +1,6 @@
 import sys
-sys.modules["langchain"] = None
+
+sys.modules["langchain"] = None  # type: ignore
 
 import logging
 import time
@@ -10,26 +11,31 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from app.auth import auth_middleware
-from app.routes.auth import router as auth_router
-from app.routes.health import router as health_router
-from app.routes.teams import router as teams_router
-from app.routes.tasks import router as tasks_router
-from app.routes.executions import router as executions_router
-from app.routes.keys import router as keys_router
-from app.routes.review import router as review_router
-from app.routes.projects import router as projects_router
-from app.routes.context import router as context_router
 from app.routes.analytics import router as analytics_router
-from app.routes.memories import router as memories_router
+from app.routes.auth import router as auth_router
+from app.routes.context import router as context_router
+from app.routes.executions import router as executions_router
 from app.routes.feedback import router as feedback_router
 from app.routes.github import router as github_router
+from app.routes.health import router as health_router
+from app.routes.keys import router as keys_router
+from app.routes.memories import router as memories_router
+from app.routes.projects import router as projects_router
+from app.routes.review import router as review_router
+from app.routes.review import start_worker, stop_worker
+from app.routes.tasks import router as tasks_router
+from app.routes.teams import router as teams_router
 from core.config import settings
 from core.database import DatabasePool
 from core.logging_config import setup_logging
-from core.observability import emit, get_request_metrics, record_request_metric, generate_correlation_id
-from core.redis import init_redis, close_redis, rate_limit_check
+from core.observability import (
+    emit,
+    generate_correlation_id,
+    get_request_metrics,
+    record_request_metric,
+)
+from core.redis import close_redis, init_redis, rate_limit_check
 from core.task_tracker import tracker
-from app.routes.review import start_worker, stop_worker
 
 setup_logging(settings.log_level, settings.log_format)
 logger = logging.getLogger(__name__)

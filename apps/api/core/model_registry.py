@@ -3,10 +3,10 @@ Model registry for managing AI provider configurations and model routing.
 Byok-first (Bring Your Own Key) implementation.
 """
 
-from typing import Dict, List, Optional, Tuple
-from core.providers import AIProvider, get_provider_for_user, create_provider, ProviderConfig
-from core.config import settings
 import logging
+
+from core.providers import AIProvider, get_provider_for_user
+from core.providers import get_provider as core_get_provider
 
 logger = logging.getLogger(__name__)
 
@@ -16,19 +16,18 @@ class ModelRegistry:
 
     def __init__(self):
         """Initialize the model registry with default model chains."""
-        # Define model chains for different roles
         self._model_chains = {
-            "baseline": ["claude-3-5-sonnet", "gpt-4o", "gemini-1.5-pro", "llama3.1:70b"],
-            "builder": ["gpt-4o", "claude-3-5-sonnet", "gemini-1.5-pro", "codellama:34b"],
-            "reviewer": ["claude-3-5-sonnet", "gpt-4o", "gemini-1.5-pro", "phi4-mini"],
-            "architect": ["claude-3-5-sonnet", "gpt-4o", "gemini-1.5-pro", "llama3.1:70b"],
-            "tester": ["gpt-4o", "claude-3-5-sonnet", "codellama:34b", "deepseek-coder:33b"],
-            "security": ["claude-3-5-sonnet", "gpt-4o", "gemini-1.5-pro", "llama3.1:70b"],
+            "baseline": ["claude-3-5-sonnet", "gpt-4o", "gemini-1.5-pro"],
+            "builder": ["gpt-4o", "claude-3-5-sonnet", "gemini-1.5-pro"],
+            "reviewer": ["claude-3-5-sonnet", "gpt-4o", "gemini-1.5-pro"],
+            "architect": ["claude-3-5-sonnet", "gpt-4o", "gemini-1.5-pro"],
+            "tester": ["gpt-4o", "claude-3-5-sonnet"],
+            "security": ["claude-3-5-sonnet", "gpt-4o", "gemini-1.5-pro"],
             "team_lead": ["claude-3-5-sonnet", "gpt-4o", "gemini-1.5-pro"],
             "aggregator": ["claude-3-5-sonnet", "gpt-4o", "gemini-1.5-pro"],
         }
 
-    def get_legacy_chain(self, role: str) -> List[str]:
+    def get_legacy_chain(self, role: str) -> list[str]:
         """
         Get legacy model chain format for backward compatibility.
 
@@ -44,9 +43,9 @@ class ModelRegistry:
         self,
         user_id: str,
         model: str,
-        project_id: Optional[str] = None,
+        project_id: str | None = None,
         db_session = None
-    ) -> AIProvider:
+    ) -> tuple[AIProvider, str]:
         """
         Get a provider instance for a specific user and model.
 
@@ -57,7 +56,7 @@ class ModelRegistry:
             db_session: Database session
 
         Returns:
-            Configured AIProvider instance
+            Configured AIProvider instance and provider type
         """
         if db_session is None:
             raise ValueError("Database session is required for BYOK provider resolution")
@@ -70,7 +69,7 @@ class ModelRegistry:
             db=db_session
         )
 
-        return provider_instance
+        return provider_instance, provider_type
 
     def get_provider_fallback(self, model: str) -> AIProvider:
         """
@@ -82,11 +81,11 @@ class ModelRegistry:
         Returns:
             AIProvider instance using global settings
         """
-        return get_provider(model)
+        return core_get_provider(model)
 
 
 # Global registry instance
-_registry: Optional[ModelRegistry] = None
+_registry: ModelRegistry | None = None
 
 
 def get_registry() -> ModelRegistry:

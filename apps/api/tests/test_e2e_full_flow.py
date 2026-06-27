@@ -18,7 +18,6 @@ from agents.graph import build_graph
 from agents.state import AgentState
 from core.providers import ChatResponse
 
-
 # ── Fixtures ─────────────────────────────────────────────────────────────
 
 @pytest_asyncio.fixture
@@ -44,6 +43,9 @@ _FAKE_RESPONSES = {
         "plan_summary": "Build a JWT auth module",
         "steps": [{"step": 1, "description": "Create auth routes", "files_to_create": ["auth.py"], "acceptance_criteria": ["POST /login works"]}],
     }),
+    "agents.nodes.planner_node.get_provider": json.dumps({
+        "requirements": [], "acceptance_criteria": [], "implementation_tasks": [], "dependencies": [], "risks": []
+    }),
     "agents.nodes.builder_node.get_provider": json.dumps({
         "summary": "Implemented JWT auth",
         "files": [{"path": "auth.py", "content": "def login(): pass", "language": "python"}],
@@ -64,6 +66,12 @@ _FAKE_RESPONSES = {
         "overall_verdict": "pass", "summary": "All checks passed",
         "critical_issues": [], "strengths": ["Clean design"],
     }),
+    "agents.nodes.deployment_node.get_provider": json.dumps({
+        "status": "success", "summary": "deployment successful"
+    }),
+    "agents.nodes.evidence_validator_node.get_provider": json.dumps({
+        "valid": True, "verdict": "pass", "findings": [], "summary": "evidence valid"
+    }),
 }
 
 
@@ -71,6 +79,7 @@ _FAKE_RESPONSES = {
 def mock_providers():
     """Mock all agent providers so tests don't call real LLMs."""
     patches = {}
+    mock_data = {}
     for path, content in _FAKE_RESPONSES.items():
         patcher = patch(path)
         mock_obj = patcher.start()
@@ -79,7 +88,25 @@ def mock_providers():
         mock_obj.return_value = provider
         patches[path] = patcher
 
-    yield
+        # Also patch get_provider_for_user
+        node_module = path.rsplit(".", 1)[0]
+        user_path = f"{node_module}.get_provider_for_user"
+        user_patcher = patch(user_path)
+        user_mock_obj = user_patcher.start()
+        def make_get_provider(p):
+            async def mock_get_provider_for_user(*args, **kwargs):
+                return p, "openai"
+            return mock_get_provider_for_user
+        user_mock_obj.side_effect = make_get_provider(provider)
+        patches[user_path] = user_patcher
+
+        mock_data[path] = {
+            "get_provider": mock_obj,
+            "get_provider_for_user": user_mock_obj,
+            "provider": provider
+        }
+
+    yield mock_data
 
     for patcher in patches.values():
         patcher.stop()
@@ -95,12 +122,12 @@ def _initial_state(overrides: dict | None = None) -> AgentState:
             "description": "Create a FastAPI JWT auth module.",
         },
         "team_config": {
-            "team_lead": {"role": "team_lead", "model": "qwen2.5-coder:7b"},
-            "builder": {"role": "builder", "model": "qwen2.5-coder:3b"},
-            "reviewer": {"role": "reviewer", "model": "dolphin-phi:latest"},
-            "tester": {"role": "tester", "model": "qwen3:4b"},
-            "security": {"role": "security", "model": "qwen3:4b"},
-            "architect": {"role": "architect", "model": "qwen3:4b"},
+            "team_lead": {"role": "team_lead", "model": "gpt-4o-mini"},
+            "builder": {"role": "builder", "model": "gpt-4o"},
+            "reviewer": {"role": "reviewer", "model": "gpt-4o-mini"},
+            "tester": {"role": "tester", "model": "gpt-4o-mini"},
+            "security": {"role": "security", "model": "gpt-4o-mini"},
+            "architect": {"role": "architect", "model": "gpt-4o-mini"},
         },
         "plan": None,
         "builder_output": None,
@@ -113,9 +140,10 @@ def _initial_state(overrides: dict | None = None) -> AgentState:
         "timed_out_agents": [],
         "repository_context": "",
         "relevant_memories": [],
+        "evidence_validation_result": {},
     }
     if overrides:
-        state.update(overrides)
+        state.update(overrides)  # type: ignore
     return state
 
 
@@ -133,6 +161,11 @@ async def test_parallel_graph_all_nodes_execute(mock_providers):
 
     assert final_state is not None
     assert final_state["current_step"] == "__end__"
+
+    # Assert that mock providers were correctly isolated and called
+    mock_providers["agents.nodes.team_lead_node.get_provider"]["get_provider"].assert_called()
+    mock_providers["agents.nodes.builder_node.get_provider"]["get_provider"].assert_called()
+    mock_providers["agents.nodes.reviewer_node.get_provider"]["get_provider"].assert_called()
 
     # All 8 nodes executed
     assert "team_lead_plan" in steps
@@ -180,9 +213,9 @@ async def test_parallel_graph_with_partial_team(mock_providers):
 
     state = _initial_state()
     state["team_config"] = {
-        "team_lead": {"role": "team_lead", "model": "qwen2.5-coder:7b"},
-        "builder": {"role": "builder", "model": "qwen2.5-coder:3b"},
-        "reviewer": {"role": "reviewer", "model": "dolphin-phi:latest"},
+        "team_lead": {"role": "team_lead", "model": "gpt-4o-mini"},
+        "builder": {"role": "builder", "model": "gpt-4o"},
+        "reviewer": {"role": "reviewer", "model": "gpt-4o-mini"},
     }
     # No tester, security, or architect
 
@@ -192,13 +225,14 @@ async def test_parallel_graph_with_partial_team(mock_providers):
             steps.add(node_name)
 
     assert "team_lead_plan" in steps
+    assert "planner" in steps
+    assert "architect" in steps
     assert "builder" in steps
     assert "reviewer" in steps
     assert "aggregator" in steps
     assert "team_lead_deliver" in steps
     assert "tester" not in steps
     assert "security" not in steps
-    assert "architect" not in steps
 
 
 @pytest.mark.asyncio
@@ -290,7 +324,7 @@ import os
 import json
 
 def login(username: str, password: str) -> bool:
-    \"\"\"Authenticate a user.\"\"\"
+    'Authenticate a user.'
     return username == "admin" and password == "secret"
 
 class UserService:
@@ -305,15 +339,22 @@ class UserService:
     file_data = resp.json()
     file_id = file_data["id"]
 
-    # Wait briefly for auto-parsing
+    # Wait for auto-parsing to complete
     import asyncio
-    await asyncio.sleep(0.5)
+    for _ in range(25):
+        summary_resp = await api_client.get(f"/api/v1/projects/{project_id}/context/summary")
+        if (
+            summary_resp.status_code == 200
+            and len(summary_resp.json()) > 0
+            and summary_resp.json()[0]["symbol_count"] > 0
+            and summary_resp.json()[0]["import_count"] > 0
+        ):
+            break
+        await asyncio.sleep(0.2)
+    else:
+        pytest.fail("Auto-parsing did not complete in time")
 
-    # Check context was parsed
-    summary_resp = await api_client.get(f"/api/v1/projects/{project_id}/context/summary")
-    assert summary_resp.status_code == 200
     summary = summary_resp.json()
-    assert len(summary) > 0
     ctx = summary[0]
     assert ctx["language"] == "python"
     assert ctx["symbol_count"] > 0  # Should have login() + UserService + get_user
@@ -351,7 +392,7 @@ async def test_e2e_team_creation(api_client):
     for role in ["team_lead", "builder", "reviewer", "tester", "security", "architect"]:
             r = await api_client.post(f"/api/v1/teams/{team_id}/members", json={
                 "role": role,
-                "model": "qwen2.5-coder:7b",
+                "model": "gpt-4o-mini",
             })
             assert r.status_code in (200, 201), f"Failed to add {role}: {r.text}"
 
@@ -388,7 +429,7 @@ async def test_e2e_full_pipeline(api_client, mock_providers):
 
     for role in ["team_lead", "builder", "reviewer"]:
         await api_client.post(f"/api/v1/teams/{team_id}/members", json={
-            "role": role, "model": "qwen2.5-coder:7b",
+            "role": role, "model": "gpt-4o-mini",
         })
 
     # Assign team to project
@@ -427,7 +468,7 @@ async def test_e2e_full_pipeline(api_client, mock_providers):
     assert "builder" in roles
 
     # Check execution
-    execs = await api_client.get(f"/api/v1/executions")
+    execs = await api_client.get("/api/v1/executions")
     assert execs.status_code == 200
     exec_list = execs.json()
     task_execs = [e for e in exec_list if e.get("task_id") == task_id]
@@ -528,7 +569,7 @@ async def test_e2e_execution_stores_memories(api_client, mock_providers):
     team_id = resp.json()["id"]
     for role in ["team_lead", "builder", "reviewer"]:
         await api_client.post(f"/api/v1/teams/{team_id}/members", json={
-            "role": role, "model": "qwen2.5-coder:7b",
+            "role": role, "model": "gpt-4o-mini",
         })
 
     # Create task (auto-executes)
@@ -545,11 +586,11 @@ async def test_e2e_execution_stores_memories(api_client, mock_providers):
     for _ in range(20):
         await asyncio.sleep(1)
         task_resp = await api_client.get(f"/api/v1/tasks/{task_id}")
-        if task_resp.json()["status"] == "completed":
+        if task_resp.json().get("status") == "completed":
             break
 
     # Check memories were stored automatically
-    resp = await api_client.get(f"/api/v1/memories?search=Memory+test+task")
+    resp = await api_client.get("/api/v1/memories?search=Memory+test+task")
     assert resp.status_code == 200
     memories = resp.json()
     # At minimum, the plan memory should be stored

@@ -5,7 +5,7 @@ in-scope, and how the platform defends against the threats we care about.
 
 > **Audience:** Engineers, security reviewers, integrators.
 > **Status:** Active. Last reviewed 2026-06-26.
-> **Reporting vulnerabilities:** see [`SECURITY.md`](./SECURITY.md).
+> **Reporting vulnerabilities:** see [`SECURITY.md`](../../SECURITY.md).
 
 ---
 
@@ -86,7 +86,7 @@ graph LR
 
 ### Out of scope (acknowledged limitations)
 
-- **Compromise of LLM provider.** We trust OpenAI / Anthropic / Google / Ollama
+- **Compromise of LLM provider.** We trust OpenAI / Anthropic / Google
   not to misuse user prompts.
 - **Compromise of the host running the API.** Standard OS hardening assumed.
 - **Insider threat with DB shell access.** Encryption at rest uses
@@ -481,4 +481,4 @@ def decrypt(ciphertext: str) -> str:
   metrics, but there is no dedicated UI to browse them.
 - **SSO.** Username/password + bcrypt is the only auth path.
 - **Penetration testing.** Planned before v1 GA; see
-  [`product/ROADMAP.md`](../product/ROADMAP.md).
+  [`release/ROADMAP.md`](../release/ROADMAP.md).

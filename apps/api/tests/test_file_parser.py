@@ -3,7 +3,7 @@
 import tempfile
 from pathlib import Path
 
-from app.file_parser import parse_file, detect_language
+from app.file_parser import detect_language, parse_file
 
 
 def test_detect_language_known_extensions():

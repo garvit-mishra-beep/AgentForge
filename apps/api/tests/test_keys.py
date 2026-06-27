@@ -172,10 +172,4 @@ async def test_api_key_preview_masked(client):
     assert "abcdefghijklmnopqrstuvwxyz" not in data["key_preview"]
 
 
-@pytest.mark.asyncio
-async def test_ollama_no_key_validation(client):
-    response = await client.post(
-        "/api/v1/keys",
-        json={"provider": "ollama", "key": "no-key-needed"},
-    )
-    assert response.status_code == 201
+

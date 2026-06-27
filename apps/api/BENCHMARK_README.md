@@ -98,7 +98,7 @@ Requirements:
 5. **Replication** - Multiple tasks per condition
 
 ### Data Collection
-- Token usage (Ollama eval_count)
+- Token usage (eval_count)
 - Execution duration (wall-clock time)
 - Retry counts (review attempts)
 - Evaluation scores (7 criteria)

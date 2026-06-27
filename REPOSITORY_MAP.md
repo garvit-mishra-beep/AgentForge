@@ -59,7 +59,7 @@ A dynamic provider resolution system resolves key configurations. When executing
 2. **User Key**: Key registered at the user level.
 3. **Global Key**: System default credentials from environment variables.
 
-Supported providers include OpenAI, Anthropic, Google Gemini, Ollama, and generic OpenAI-compatible endpoints.
+Supported providers include OpenAI, Anthropic, Google Gemini, and generic OpenAI-compatible endpoints.
 
 ### Repository Intelligence (`app/repository_intelligence/`)
 Generates call graphs, symbol indices, and dependency structures using Tree-Sitter parsing. This module allows agents to fetch precise contextual files and symbols, minimizing token usage and context limits.
@@ -97,7 +97,7 @@ graph TD
   end
 
   subgraph Providers ["AI & Integrations"]
-    LLM["LLMs (OpenAI/Anthropic/Gemini/Ollama)"]
+    LLM["LLMs (OpenAI/Anthropic/Gemini)"]
     GitHub["GitHub App API"]
   end
 

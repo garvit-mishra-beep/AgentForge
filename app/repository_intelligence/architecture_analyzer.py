@@ -343,7 +343,7 @@ class ArchitectureAnalyzer:
                     with open(full_path, 'r', encoding='utf-8') as f:
                         lines = f.readlines()
                         component.lines_of_code = len([line for line in lines if line.strip()])
-                except:
+                except Exception:
                     component.lines_of_code = 0
 
         self.components.append(component)

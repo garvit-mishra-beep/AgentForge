@@ -13,7 +13,7 @@ Configure the properties in your local `apps/api/.env` file. Below is a comprehe
 |:---|:---:|:---:|:---|
 | `JWT_SECRET` | string | `supersecret` | Signature secret for local PyJWT tokens. |
 | `ENCRYPTION_KEY` | string | (Required) | Base64 Fernet key used to encrypt BYOK client keys at rest. |
-| `DATABASE_URL` | string | `postgresql://postgres:postgres@localhost:5432/agentforge` | PostgreSQL database connection string. |
+| `DATABASE_URL` | string | `postgresql://agentforge:agentforge@localhost:5432/agentforge` | PostgreSQL database connection string. |
 | `REDIS_URL` | string | `redis://localhost:6379/0` | Redis caching and rate limiting connection string. |
 
 ### Fast Demo Mode Configurations
@@ -45,7 +45,6 @@ System defaults when no User or Project level key is resolved:
 | `OPENAI_API_KEY` | string | - | Global OpenAI API access key. |
 | `ANTHROPIC_API_KEY` | string | - | Global Anthropic API access key. |
 | `GOOGLE_API_KEY` | string | - | Global Google Gemini API access key. |
-| `OLLAMA_BASE_URL` | string | `http://localhost:11434` | Endpoint url for local Ollama providers. |
 
 ---
 

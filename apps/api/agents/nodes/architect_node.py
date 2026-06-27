@@ -15,7 +15,8 @@ async def architect_node(state: AgentState) -> AgentState:
 
     if "architect" not in state["team_config"]:
         logger.info("No architect agent configured — skipping")
-        return {"architect_output": '{"recommendations": [], "summary": "No architect agent configured", "quality_score": 0}'}
+        state["architect_output"] = '{"recommendations": [], "summary": "No architect agent configured", "quality_score": 0}'
+        return state
 
     # Get user and project context from state (with fallbacks)
     user_id = state.get("user_id", "00000000-0000-0000-0000-000000000001")

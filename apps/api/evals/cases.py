@@ -77,7 +77,10 @@ def _injection_markers_neutralized():
 # ── Reviewer node (mock provider, real node wiring) ────────────────────────
 
 
-class _FakeProvider:
+from core.providers import AIProvider
+
+
+class _FakeProvider(AIProvider):
     def __init__(self, content: str):
         self._content = content
 

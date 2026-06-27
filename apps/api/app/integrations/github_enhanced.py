@@ -3,12 +3,10 @@ Enhanced GitHub Integration Core for AgentForge.
 Provides advanced GitHub workflow capabilities including repository synchronization
 and comprehensive multi-agent pull request reviews.
 """
-import json
+import asyncio
 import logging
-from typing import Dict, List, Any, Optional
 from datetime import datetime
-
-import httpx
+from typing import Any
 
 from app.integrations.github import GitHubClient
 from core.config import settings
@@ -18,9 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 # Global instances
-github_app_manager = None
-enhanced_pr_reviewer = None
-repository_synchronizer = None
+github_app_manager: Any = None
+enhanced_pr_reviewer: Any = None
+repository_synchronizer: Any = None
 
 
 def _init_globals():
@@ -53,7 +51,7 @@ class RepositorySynchronizer:
     def __init__(self):
         self.logger = logging.getLogger(__name__ + ".RepositorySynchronizer")
 
-    async def synchronize_repository(self, installation_id: int, repo_full_name: str) -> Dict[str, Any]:
+    async def synchronize_repository(self, installation_id: int, repo_full_name: str) -> dict[str, Any]:
         """
         Synchronize repository metadata with AgentForge.
 
@@ -92,18 +90,6 @@ class RepositorySynchronizer:
             topics_resp.raise_for_status()
             topics_data = topics_resp.json()
             topics = topics_data.get("names", [])
-
-            # Get contributors (limited)
-            contrib_resp = await client._http.get(
-                f"{client._api}/repos/{repo_full_name}/contributors",
-                headers=client._headers(),
-                params={"per_page": 5}
-            )
-            contrib_resp.await_for_status() if hasattr(contrib_resp, 'await_for_status') else None
-            try:
-                contributors = contrib_resp.json()
-            except:
-                contributors = []
 
             await client.close()
 
@@ -186,7 +172,7 @@ class EnhancedPRReviewer:
         include_security: bool = True,
         include_performance: bool = True,
         include_style: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform a comprehensive review of a pull request using multiple analysis dimensions.
 
@@ -234,7 +220,7 @@ class EnhancedPRReviewer:
             await self.logger.debug(f"Found {len(code_files)} code files to review out of {len(files_data)} total files")
 
             # Initialize results
-            review_results = {
+            review_results: dict[str, Any] = {
                 "metadata": {
                     "repository": repo_full_name,
                     "pull_request": pr_number,
@@ -358,7 +344,7 @@ class EnhancedPRReviewer:
         """Perform code quality review using existing AgentForge reviewer."""
         try:
             # Import the existing reviewer functionality
-            from app.integrations.github import default_pr_reviewer, _findings_to_comments
+            from app.integrations.github import _findings_to_comments, default_pr_reviewer
 
             all_findings = []
             all_comments = []
@@ -694,7 +680,7 @@ class EnhancedPRReviewer:
 
         # Build the comment body
         body_parts = [
-            f"## AgentForge Comprehensive Review",
+            "## AgentForge Comprehensive Review",
             f"**Conclusion**: {conclusion.title()}",
             f"**Summary**: {summary}",
             ""
@@ -741,12 +727,6 @@ class EnhancedPRReviewer:
             emit(f"github_{event_type}", data)
         except Exception as e:
             self.logger.warning(f"Failed to emit event {event_type}: {e}")
-
-
-class RepositorySynchronizer:
-    """Placeholder for compatibility - the real implementation is above."""
-    pass
-
 
 # Initialize global instances
 _init_globals()

@@ -1,13 +1,14 @@
 import json
 import logging
+from typing import Any
 
 from agents.sanitize import wrap_context, wrap_task
 from agents.state import AgentState
 from agents.utils import _is_timeout, call_with_timeout, load_prompt_template
-from app.services.test_executor import TestExecutor, TestResult
+from app.services.test_executor import TestExecutor, TestFramework, TestResult, TestResultStatus
 from core.config import settings
 from core.providers import get_provider, get_provider_for_user
-from models.agent_outputs import Verdict, ReviewOutput, Finding
+from models.agent_outputs import Finding, ReviewOutput, Severity, Verdict
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ def _test_result_to_review_output(test_result: TestResult, summary: str = "") ->
         finding_objects.append(Finding(
             title=f["title"],
             detail=f["detail"],
-            severity=f["severity"]
+            severity=Severity(f["severity"])
         ))
 
     review_output = ReviewOutput(
@@ -71,7 +72,7 @@ def _test_result_to_review_output(test_result: TestResult, summary: str = "") ->
     return review_output.model_dump_json()
 
 
-async def tester_node(state: AgentState) -> AgentState:
+async def tester_node(state: AgentState) -> dict[str, Any]:
     logger.info("Tester phase")
 
     # Get user and project context from state (with fallbacks)
@@ -135,11 +136,11 @@ async def tester_node(state: AgentState) -> AgentState:
         timeout_result = ReviewOutput(
             verdict=Verdict.review_needed,
             summary="Timed out - test generation incomplete",
-            findings=[{
-                "title": "Test generation timed out",
-                "detail": f"Test generation exceeded {timeout_s} second limit",
-                "severity": "medium"
-            }]
+            findings=[Finding(
+                title="Test generation timed out",
+                detail=f"Test generation exceeded {timeout_s} second limit",
+                severity=Severity.medium
+            )]
         )
         return {"tester_output": timeout_result.model_dump_json(), "timed_out_agents": timed_out}
 
@@ -219,11 +220,13 @@ async def tester_node(state: AgentState) -> AgentState:
             if isinstance(first_file, str) and first_file.endswith(('.js', '.ts', '.jsx', '.tsx')):
                 language = "javascript"
 
+        framework = TestFramework.VITEST if language == "javascript" else TestFramework.PYTEST
+
         # Execute tests
         test_result = await test_executor.execute_tests(
             source_files=source_files,
             test_files=test_file_contents,
-            language=language
+            framework=framework
         )
 
         # Convert test result to review output format
@@ -249,11 +252,11 @@ async def tester_node(state: AgentState) -> AgentState:
         error_result = ReviewOutput(
             verdict=Verdict.review_needed,
             summary=f"Test generation failed: {str(e)[:100]}",
-            findings=[{
-                "title": "Test generation parsing error",
-                "detail": f"Could not parse test generator output: {str(e)[:200]}",
-                "severity": "medium"
-            }]
+            findings=[Finding(
+                title="Test generation parsing error",
+                detail=f"Could not parse test generator output: {str(e)[:200]}",
+                severity=Severity.medium
+            )]
         )
         return {"tester_output": error_result.model_dump_json()}
     except Exception as e:
@@ -262,10 +265,10 @@ async def tester_node(state: AgentState) -> AgentState:
         error_result = ReviewOutput(
             verdict=Verdict.review_needed,
             summary=f"Test execution error: {str(e)[:100]}",
-            findings=[{
-                "title": "Test execution error",
-                "detail": f"Unexpected error during testing: {str(e)[:200]}",
-                "severity": "high"
-            }]
+            findings=[Finding(
+                title="Test execution error",
+                detail=f"Unexpected error during testing: {str(e)[:200]}",
+                severity=Severity.high
+            )]
         )
         return {"tester_output": error_result.model_dump_json()}

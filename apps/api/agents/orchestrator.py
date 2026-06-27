@@ -1,17 +1,17 @@
-import asyncio
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
 from agents.graph import build_graph
-from app.memory_service import store_memory, get_relevant_memories
+from app.memory_service import get_relevant_memories, store_memory
 from core.config import settings
 
 logger = logging.getLogger(__name__)
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _reduce_context_messages(messages: list) -> list:
@@ -107,7 +107,10 @@ async def run_task(db, task_id: str) -> None:
                 logger.warning("Failed to fetch memories: %s", e)
 
             try:
-                from app.feedback_service import rejected_patterns, format_rejected_patterns_for_prompt
+                from app.feedback_service import (
+                    format_rejected_patterns_for_prompt,
+                    rejected_patterns,
+                )
                 patterns = await rejected_patterns(db, user_id, project_id)
                 learned_signal = format_rejected_patterns_for_prompt(patterns)
             except Exception as e:
@@ -155,7 +158,6 @@ async def run_task(db, task_id: str) -> None:
         step_order = 0
         final_state = dict(initial_state)
 
-        stream_timeout = settings.max_execution_time or 600
         async for event in graph.astream(initial_state):
             for node_name, state_update in event.items():
                 step_order += 1
@@ -202,7 +204,7 @@ async def run_task(db, task_id: str) -> None:
 
         logger.info("Task %s completed successfully", task_id)
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error("Task %s timed out after %ss", task_id, settings.max_execution_time)
         await db.execute(
             "UPDATE tasks SET status = 'failed', error_message = 'Execution timed out', updated_at = NOW() WHERE id = $1",
@@ -222,7 +224,7 @@ async def run_task(db, task_id: str) -> None:
 
 async def _store_execution_memories(db, task_row, final_state: dict, user_id: str, project_id: str | None):
     """Store key execution outputs as memories for future reuse."""
-    memories = []
+    memories: list[dict[str, Any]] = []
 
     # Planning approach
     plan = final_state.get("plan")

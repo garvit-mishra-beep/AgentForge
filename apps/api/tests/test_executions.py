@@ -30,7 +30,7 @@ async def test_execution_with_team_and_task(client):
     for role in ["team_lead", "builder", "reviewer"]:
         await client.post(
             f"/api/v1/teams/{team_id}/members",
-            json={"role": role, "model": "qwen2.5-coder:7b"},
+            json={"role": role, "model": "gpt-4o-mini"},
         )
 
     task_resp = await client.post(

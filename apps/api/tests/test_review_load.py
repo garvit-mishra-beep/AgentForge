@@ -7,7 +7,6 @@ Usage:
 
 import asyncio
 import json
-import time
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -18,7 +17,6 @@ from app.main import app
 from core.config import settings
 from core.providers import ChatResponse
 from core.redis import rate_limit_reset, review_store_cleanup
-
 
 SAMPLE_CODES = [
     "def hello(): return 'world'",
@@ -77,8 +75,7 @@ async def test_sequential_reviews(client, monkeypatch):
     monkeypatch.setattr(settings, "review_rate_limit", 100)
 
     provider = _make_mock_provider()
-    with patch("app.routes.review.get_provider", return_value=provider), \
-         patch("core.model_registry.get_provider", return_value=provider):
+    with patch("core.model_registry.ModelRegistry.get_provider_for_user", return_value=(provider, "openai")):
         for i, code in enumerate(SAMPLE_CODES[:n]):
             resp = await client.post("/api/v1/review", json={"code": code}, headers=auth)
             assert resp.status_code == 200, f"Request {i} failed: {resp.text}"
@@ -96,8 +93,7 @@ async def test_burst_reviews(client, monkeypatch):
     monkeypatch.setattr(settings, "review_rate_limit", 100)
 
     provider = _make_mock_provider()
-    with patch("app.routes.review.get_provider", return_value=provider), \
-         patch("core.model_registry.get_provider", return_value=provider):
+    with patch("core.model_registry.ModelRegistry.get_provider_for_user", return_value=(provider, "openai")):
         responses = await asyncio.gather(*[
             client.post("/api/v1/review", json={"code": code}, headers=auth)
             for code in SAMPLE_CODES[:n]
@@ -117,8 +113,7 @@ async def test_rate_limit_enforcement(client, monkeypatch):
     monkeypatch.setattr(settings, "review_rate_window", 60)
 
     provider = _make_mock_provider()
-    with patch("app.routes.review.get_provider", return_value=provider), \
-         patch("core.model_registry.get_provider", return_value=provider):
+    with patch("core.model_registry.ModelRegistry.get_provider_for_user", return_value=(provider, "openai")):
         for i in range(5):
             resp = await client.post("/api/v1/review", json={"code": "pass"}, headers=auth)
             assert resp.status_code == 200, f"Request {i} failed"

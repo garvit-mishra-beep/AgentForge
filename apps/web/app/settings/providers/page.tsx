@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 type ConnectionState = "loading" | "connected" | "not_connected" | "error";
 
 const PROVIDER_ORDER: ProviderName[] = [
-  "openai", "anthropic", "google", "openrouter", "groq", "ollama",
+  "openai", "anthropic", "google", "openrouter", "groq",
 ];
 
 export default function ProvidersPage() {
@@ -46,7 +46,7 @@ export default function ProvidersPage() {
   function getState(provider: ProviderName): ConnectionState {
     if (loading) return "loading";
     const key = keys.find((k) => k.provider === provider);
-    if (!key) return provider === "ollama" ? "connected" : "not_connected";
+    if (!key) return "not_connected";
     return key.is_enabled ? "connected" : "error";
   }
 
@@ -144,8 +144,7 @@ export default function ProvidersPage() {
                     } className="mt-0.5">
                       {state === "loading" ? "..." :
                        state === "connected" ? "Connected" :
-                       state === "error" ? "Disabled" :
-                       provider === "ollama" ? "Always Available" : "Not Connected"}
+                       state === "error" ? "Disabled" : "Not Connected"}
                     </Badge>
                   </div>
                 </div>
@@ -163,12 +162,7 @@ export default function ProvidersPage() {
                 </div>
               )}
 
-              {provider === "ollama" && !key && (
-                <div className="flex items-center gap-2 rounded-lg border border-border bg-surface/50 px-3 py-2 mb-3">
-                  <Shield className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span className="text-xs text-muted-foreground">No API key required — runs locally</span>
-                </div>
-              )}
+
 
               <div className="flex items-center gap-2">
                 {key ? (
@@ -198,7 +192,7 @@ export default function ProvidersPage() {
                       {deleting === key.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                     </button>
                   </>
-                ) : provider !== "ollama" ? (
+                ) : (
                   <Button
                     variant="default"
                     size="sm"
@@ -208,7 +202,7 @@ export default function ProvidersPage() {
                     <Plus className="h-3 w-3" />
                     Add Key
                   </Button>
-                ) : null}
+                )}
               </div>
             </motion.div>
           );

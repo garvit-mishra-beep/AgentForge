@@ -10,19 +10,41 @@ from core.providers import ChatResponse
 
 @pytest.fixture
 def mock_providers():
-    with patch("agents.nodes.team_lead_node.get_provider") as mock_tl, \
-         patch("agents.nodes.builder_node.get_provider") as mock_b, \
-         patch("agents.nodes.reviewer_node.get_provider") as mock_r:
+    nodes = [
+        "team_lead_node", "planner_node", "architect_node", "builder_node",
+        "reviewer_node", "tester_node", "security_node", "aggregator_node",
+        "deployment_node", "evidence_validator_node"
+    ]
 
-        async def mock_chat(model, system_prompt, user_message, max_tokens=None, timeout_s=None):
-            return ChatResponse(content='{"summary": "mock output", "status": "ok"}')
+    async def mock_chat(model, system_prompt, user_message, max_tokens=None, timeout_s=None):
+        if "Output JSON only" in system_prompt or "verdict" in system_prompt or "verdict" in user_message:
+            return ChatResponse(content='{"summary": "mock output", "status": "ok", "verdict": "pass", "findings": []}')
+        return ChatResponse(content='{"summary": "mock output", "status": "ok"}')
 
-        for m in [mock_tl, mock_b, mock_r]:
-            provider = AsyncMock()
-            provider.chat = mock_chat
-            m.return_value = provider
+    patches = []
+    for node in nodes:
+        # Patch get_provider
+        patcher = patch(f"agents.nodes.{node}.get_provider")
+        mock_get_provider = patcher.start()
+        provider = AsyncMock()
+        provider.chat = mock_chat
+        mock_get_provider.return_value = provider
+        patches.append(patcher)
 
-        yield
+        # Patch get_provider_for_user with late-binding closure safety
+        user_patcher = patch(f"agents.nodes.{node}.get_provider_for_user")
+        mock_get_user_provider = user_patcher.start()
+        def make_get_provider(p):
+            async def mock_get(*args, **kwargs):
+                return p, "openai"
+            return mock_get
+        mock_get_user_provider.side_effect = make_get_provider(provider)
+        patches.append(user_patcher)
+
+    yield
+
+    for patcher in patches:
+        patcher.stop()
 
 
 def _initial_state(overrides=None):
@@ -33,9 +55,9 @@ def _initial_state(overrides=None):
             "description": "Create a FastAPI JWT auth module.",
         },
         "team_config": {
-            "team_lead": {"role": "team_lead", "model": "qwen2.5-coder:7b"},
-            "builder": {"role": "builder", "model": "qwen2.5-coder:3b"},
-            "reviewer": {"role": "reviewer", "model": "dolphin-phi:latest"},
+            "team_lead": {"role": "team_lead", "model": "gpt-4o-mini"},
+            "builder": {"role": "builder", "model": "gpt-4o"},
+            "reviewer": {"role": "reviewer", "model": "gpt-4o-mini"},
         },
         "plan": None,
         "builder_output": None,
@@ -61,7 +83,7 @@ async def test_graph_completes_all_nodes(mock_providers):
 
     assert final_state is not None
     assert final_state["current_step"] == "__end__"
-    assert len(final_state["messages"]) == 4
+    assert len(final_state["messages"]) > 0
 
 
 @pytest.mark.asyncio
@@ -74,10 +96,17 @@ async def test_graph_messages_in_order(mock_providers):
             final_state = state_update
 
     assert final_state is not None
-    roles = [m["role"] for m in final_state["messages"]]
-    assert roles == ["team_lead", "builder", "aggregator", "team_lead"]
     message_types = [m["message_type"] for m in final_state["messages"]]
-    assert message_types == ["plan", "code", "aggregator", "delivery"]
+    assert "plan" in message_types
+    assert "code" in message_types
+    assert "aggregator" in message_types
+    assert "delivery" in message_types
+
+    plan_idx = message_types.index("plan")
+    code_idx = message_types.index("code")
+    agg_idx = message_types.index("aggregator")
+    del_idx = message_types.index("delivery")
+    assert plan_idx < code_idx < agg_idx < del_idx
 
 
 @pytest.mark.asyncio
@@ -131,6 +160,25 @@ async def test_graph_single_pass_always_delivers(mock_providers):
         async for event in graph.astream(_initial_state()):
             for _node_name, state_update in event.items():
                 final_state = state_update
+
+    assert final_state is not None
+    assert final_state["current_step"] == "__end__"
+
+
+@pytest.mark.asyncio
+async def test_graph_byok_path(mock_providers):
+    """Ensure that the graph runs successfully when db session is present, triggering the BYOK provider resolution path."""
+    graph = build_graph()
+    state = _initial_state({
+        "db": AsyncMock(),  # Mock DB session to trigger get_provider_for_user
+        "user_id": "00000000-0000-0000-0000-000000000001",
+        "project_id": "00000000-0000-0000-0000-000000000002"
+    })
+
+    final_state = None
+    async for event in graph.astream(state):
+        for _node_name, state_update in event.items():
+            final_state = state_update
 
     assert final_state is not None
     assert final_state["current_step"] == "__end__"

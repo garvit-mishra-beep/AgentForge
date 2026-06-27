@@ -5,20 +5,16 @@ Provides additional endpoints for repository synchronization and enhanced workfl
 
 import json
 import logging
-from typing import Dict, Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.integrations.github import verify_webhook_signature
 from app.integrations.github_enhanced import (
-    github_app_manager,
-    enhanced_pr_reviewer,
-    repository_synchronizer,
-    synchronize_repository,
+    handle_repository_webhook,
     review_pull_request,
-    handle_repository_webhook
+    synchronize_repository,
 )
-from app.integrations.github import verify_webhook_signature, handle_pull_request_event as basic_pr_handler
 from core.config import settings
 from core.dependencies import get_db
 from core.observability import emit
@@ -229,7 +225,7 @@ async def _review_pr_task(
         })
 
 
-@repository_router.post("/webhook")
+@router.post("/webhook")
 async def enhanced_github_webhook(request: Request):
     """
     Enhanced GitHub webhook handler that processes additional event types.
@@ -288,7 +284,6 @@ async def enhanced_github_webhook(request: Request):
         action = payload.get("action")
         repositories_added = payload.get("repositories_added", [])
         repositories_removed = payload.get("repositories_removed", [])
-        installation_id = payload.get("installation", {}).get("id")
 
         if repositories_added:
             for repo in repositories_added:

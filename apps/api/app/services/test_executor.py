@@ -2,16 +2,21 @@
 Test Execution Service with Sandbox Security
 Executes generated tests in secure, isolated environments.
 """
-import asyncio
 import json
+import logging
 import time
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
-import logging
+from typing import Any
 
 # Import the sandbox executor and related types
-from app.services.sandbox_executor import SandboxExecutor, SandboxConfig, SecurityLevel, NetworkPolicy, ResourceLimits
+from app.services.sandbox_executor import (
+    NetworkPolicy,
+    ResourceLimits,
+    SandboxConfig,
+    SandboxExecutor,
+    SecurityLevel,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +44,8 @@ class TestResult:
     duration_ms: int
     stdout: str
     stderr: str
-    coverage_percent: Optional[float] = None
-    details: Optional[List[Dict[str, Any]]] = None
+    coverage_percent: float | None = None
+    details: list[dict[str, Any]] | None = None
 
 
 class TestExecutor:
@@ -57,7 +62,7 @@ class TestExecutor:
             TestFramework.JEST: "node:18-slim"
         }
 
-    async def execute_python_tests(self, source_files: Dict[str, str], test_files: Dict[str, str]) -> TestResult:
+    async def execute_python_tests(self, source_files: dict[str, str], test_files: dict[str, str]) -> TestResult:
         """
         Execute Python tests using pytest in a secure sandbox.
 
@@ -255,7 +260,7 @@ if __name__ == "__main__":
                 details=[{"error": str(e)}]
             )
 
-    async def execute_javascript_tests(self, source_files: Dict[str, str], test_files: Dict[str, str], package_json: Optional[Dict[str, Any]] = None) -> TestResult:
+    async def execute_javascript_tests(self, source_files: dict[str, str], test_files: dict[str, str], package_json: dict[str, Any] | None = None) -> TestResult:
         """
         Execute JavaScript/TypeScript tests using Vitest or Jest in a secure sandbox.
 
@@ -275,7 +280,7 @@ if __name__ == "__main__":
             if package_json:
                 deps = {**package_json.get("dependencies", {}), **package_json.get("devDependencies", {})}
                 if "jest" in deps:
-                    framework = TestFramework.JET
+                    framework = TestFramework.JEST
                 elif "vitest" in deps:
                     framework = TestFramework.VITEST
 
@@ -470,10 +475,10 @@ try {
     # Keep the original method signatures for compatibility but delegate to secure versions
     async def execute_tests(
         self,
-        source_files: Dict[str, str],
-        test_files: Dict[str, str],
+        source_files: dict[str, str],
+        test_files: dict[str, str],
         framework: TestFramework = TestFramework.PYTEST,
-        package_json: Optional[Dict[str, Any]] = None
+        package_json: dict[str, Any] | None = None
     ) -> TestResult:
         """
         Execute tests in the specified framework using secure sandboxes.

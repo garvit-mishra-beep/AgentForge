@@ -14,7 +14,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const PROVIDER_ORDER: ProviderName[] = [
-  "openai", "anthropic", "google", "openrouter", "groq", "ollama",
+  "openai", "anthropic", "google", "openrouter", "groq",
 ];
 
 const SETTINGS_SECTIONS = [
@@ -50,8 +50,8 @@ const SETTINGS_SECTIONS = [
     description: "Configure available AI models",
     icon: Key,
     items: [
-      { label: "Default Provider", value: "Ollama" },
-      { label: "Available Models", value: "12" },
+      { label: "Default Provider", value: "OpenAI" },
+      { label: "Available Models", value: "9" },
     ],
   },
 ];
@@ -96,7 +96,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant={connectedCount() > 0 ? "success" : "outline"} className="text-[10px]">
-                    {loading ? "..." : `${connectedCount()}/${PROVIDER_ORDER.length - 1} connected`}
+                    {loading ? "..." : `${connectedCount()}/${PROVIDER_ORDER.length} connected`}
                   </Badge>
                   <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                 </div>
@@ -107,7 +107,7 @@ export default function SettingsPage() {
                 {PROVIDER_ORDER.map((p) => {
                   const key = keys.find((k) => k.provider === p);
                   const config = PROVIDER_CONFIG[p];
-                  const isConnected = key?.is_enabled || p === "ollama";
+                  const isConnected = !!key?.is_enabled;
                   return (
                     <span
                       key={p}

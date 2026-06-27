@@ -3,9 +3,8 @@ Long-Term Memory Service
 Stores, retrieves, and ranks memories for cross-session context.
 """
 
-import uuid
 import json
-from datetime import datetime
+import uuid
 from typing import Any
 
 from core.database import DatabasePool

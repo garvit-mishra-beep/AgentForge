@@ -5,28 +5,25 @@ import json
 import logging
 import uuid
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.model_registry import ModelRegistry, get_registry
-from core.task_tracker import tracker
 from core.config import settings
 from core.dependencies import get_db
+from core.model_registry import get_registry
 from core.redis import (
     check_rate_limit,
-    rate_limit_reset,
+    get_review_state,
     review_store_cleanup,
     review_store_update,
-    get_review_state,
 )
 from models.schemas import (
+    LanguageDetectionResponse,
     ReviewRequest,
     ReviewResponse,
     ReviewResult,
-    LanguageDetectionResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -34,7 +31,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/review", tags=["review"])
 
 # In-memory store for demo mode (would be replaced with Redis/DB in production)
-_reviews: Dict[str, Dict[str, Any]] = {}
+_reviews: dict[str, dict[str, Any]] = {}
 
 
 def start_worker() -> None:
@@ -239,7 +236,7 @@ async def _run_reviewer(
 async def submit_review(
     request: ReviewRequest,
     http_request: Request,
-    user_id: str = None,  # Will be set by dependency or default to demo
+    user_id: str | None = None,  # Will be set by dependency or default to demo
     db: AsyncSession = Depends(get_db),
 ):
     # Clean up old reviews
@@ -259,9 +256,8 @@ async def submit_review(
         )
 
     # Use provided user_id or fall back to demo user
-    if not user_id:
-        from app.auth import DEMO_USER_ID
-        user_id = DEMO_USER_ID
+    from app.auth import DEMO_USER_ID
+    user_id_str = user_id if user_id else DEMO_USER_ID
 
     # Generate review ID
     review_id = str(uuid.uuid4())
@@ -274,13 +270,13 @@ async def submit_review(
             "status": "queued",
             "code": request.code,
             "language": request.language,
-            "user_id": user_id,
+            "user_id": user_id_str,
             "created_at": datetime.now(UTC).isoformat(),
         }
     )
 
     # Start background processing
-    asyncio.create_task(_process_review(review_id, request.code, request.language, user_id))
+    asyncio.create_task(_process_review(review_id, request.code, request.language or "text", user_id_str))
 
     return ReviewResponse(
         review_id=review_id,
@@ -342,7 +338,7 @@ async def _process_review(review_id: str, code: str, language: str, user_id: str
             }
         )
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         await review_store_update(
             review_id,
             {
@@ -366,7 +362,7 @@ async def _process_review(review_id: str, code: str, language: str, user_id: str
 @router.get("/{review_id}", response_model=ReviewResult)
 async def get_review(
     review_id: str,
-    user_id: str = None,  # Will be set by dependency or default to demo
+    user_id: str | None = None,  # Will be set by dependency or default to demo
     db: AsyncSession = Depends(get_db),
 ):
     """Get review results by ID."""
@@ -483,7 +479,7 @@ async def detect_language(code: str):
 @router.get("/{review_id}/status")
 async def get_review_status_legacy(
     review_id: str,
-    user_id: str = None,  # Will be set by dependency or default to demo
+    user_id: str | None = None,  # Will be set by dependency or default to demo
 ):
     """Get review status (legacy endpoint)."""
     # Use provided user_id or fall back to demo user

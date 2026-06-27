@@ -20,6 +20,7 @@ import hmac
 import logging
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import httpx
 import jwt
@@ -112,7 +113,7 @@ class GitHubClient:
     async def create_review(self, repo: str, number: int, body: str,
                             comments: list[dict], event: str = "COMMENT") -> dict:
         """Post a PR review. ``comments`` use GitHub's inline-comment shape."""
-        payload = {"body": body, "event": event}
+        payload: dict[str, Any] = {"body": body, "event": event}
         if comments:
             payload["comments"] = comments
         resp = await self._http.post(

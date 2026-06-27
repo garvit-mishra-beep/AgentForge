@@ -1,5 +1,5 @@
-import json
 import logging
+from typing import Any
 
 from agents.sanitize import wrap_context, wrap_task
 from agents.state import AgentState
@@ -11,7 +11,7 @@ from models.agent_outputs import ReviewOutput, Verdict
 logger = logging.getLogger(__name__)
 
 
-async def reviewer_node(state: AgentState) -> AgentState:
+async def reviewer_node(state: AgentState) -> dict[str, Any]:
     logger.info("Reviewer phase")
 
     # Get user and project context from state (with fallbacks)
@@ -76,10 +76,8 @@ async def reviewer_node(state: AgentState) -> AgentState:
         timed_out = state.get("timed_out_agents", [])
         timed_out.append("reviewer")
         review = '{"verdict": "pass", "summary": "Timed out - auto-passed", "findings": []}'
-        result_ta = result
     else:
         review = result.content
-        result_ta = result
 
     attempts = state.get("review_attempts", 0)
 

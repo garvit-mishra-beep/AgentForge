@@ -51,7 +51,7 @@ graph TB
   subgraph Infra
     PG[(PostgreSQL + pgvector)]
     Redis[(Redis)]
-    LLM[(OpenAI · Anthropic · Gemini · Ollama)]
+    LLM[(OpenAI · Anthropic · Gemini)]
     GH[(GitHub API)]
   end
 

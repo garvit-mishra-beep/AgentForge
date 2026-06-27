@@ -6,13 +6,13 @@ import pytest
 
 from app.main import app
 from app.memory_service import (
-    store_memory,
-    get_memory,
-    get_memories,
-    get_relevant_memories,
-    update_memory,
-    delete_memory,
     delete_memories_by_project,
+    delete_memory,
+    get_memories,
+    get_memory,
+    get_relevant_memories,
+    store_memory,
+    update_memory,
 )
 
 USER_1 = "00000000-0000-0000-0000-000000000001"

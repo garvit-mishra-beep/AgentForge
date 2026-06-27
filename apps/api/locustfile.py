@@ -51,9 +51,9 @@ class AgentForgeUser(HttpUser):
         resp = self.client.post("/api/v1/teams", json={
             "name": name,
             "roles": [
-                {"role": "lead", "model": "qwen3.5:4b"},
-                {"role": "builder", "model": "qwen2.5-coder:7b"},
-                {"role": "reviewer", "model": "phi4-mini"},
+                {"role": "lead", "model": "gpt-4o-mini"},
+                {"role": "builder", "model": "gpt-4o"},
+                {"role": "reviewer", "model": "gpt-4o-mini"},
             ],
         }, headers={"Authorization": f"Bearer {self.token}"})
         if resp.status_code == 201:

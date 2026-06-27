@@ -1,15 +1,22 @@
 """Security and observability tests."""
 
-import pytest
-
 import json
 import logging
 
+import pytest
+
+from app.routes.projects import _ALLOWED_EXTENSIONS, _sanitize_filename
 from core.encryption import EncryptionService
 from core.logging_config import JSONFormatter, setup_logging
 from core.observability import generate_correlation_id, get_request_metrics
-from core.redis import rate_limit_check, rate_limit_reset, failed_login_attempt, is_login_locked, reset_login_attempts, brute_force_reset
-from app.routes.projects import _sanitize_filename, _ALLOWED_EXTENSIONS
+from core.redis import (
+    brute_force_reset,
+    failed_login_attempt,
+    is_login_locked,
+    rate_limit_check,
+    rate_limit_reset,
+    reset_login_attempts,
+)
 
 
 @pytest.mark.asyncio

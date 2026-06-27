@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from uuid import UUID
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -10,7 +11,6 @@ class ProviderName(str, Enum):
     google = "google"
     openrouter = "openrouter"
     groq = "groq"
-    ollama = "ollama"
 
 
 class AgentRole(str, Enum):
@@ -21,6 +21,9 @@ class AgentRole(str, Enum):
     security = "security"
     architect = "architect"
     aggregator = "aggregator"
+    planner = "planner"
+    deployment = "deployment"
+    evidence_validator = "evidence_validator"
 
 
 class MessageType(str, Enum):
@@ -32,6 +35,10 @@ class MessageType(str, Enum):
     error = "error"
     info = "info"
     aggregator = "aggregator"
+    evidence_validation = "evidence_validation"
+    deployment = "deployment"
+    research = "research"
+    documentation = "documentation"
 
 
 class TaskStatus(str, Enum):
@@ -193,6 +200,7 @@ class ApiKeyResponse(BaseModel):
     provider: ProviderName
     key_preview: str
     is_enabled: bool
+    is_default: bool = False
     created_at: datetime
     updated_at: datetime
 

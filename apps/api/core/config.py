@@ -14,8 +14,7 @@ class Settings(BaseSettings):
 
     redis_url: str = "redis://localhost:6379/0"
 
-    ollama_base_url: str = "http://localhost:11434"
-    ollama_default_model: str = "qwen2.5-coder:7b"
+
 
     openai_api_key: str = ""
     anthropic_api_key: str = ""
@@ -50,9 +49,9 @@ class Settings(BaseSettings):
     review_max_code_length: int = 50000
     review_max_concurrent: int = 4
     review_queue_maxsize: int = 20
-    review_models_baseline: str = "phi4-mini,qwen2.5-coder:7b,llama3.2:3b"
-    review_models_builder: str = "qwen2.5-coder:7b,phi4-mini,llama3.2:3b"
-    review_models_reviewer: str = "phi4-mini,qwen2.5-coder:7b,llama3.2:3b"
+    review_models_baseline: str = "gpt-4o-mini,claude-haiku-3-5,gemini-2.0-flash"
+    review_models_builder: str = "gpt-4o-mini,claude-haiku-3-5,gemini-2.0-flash"
+    review_models_reviewer: str = "gpt-4o-mini,claude-haiku-3-5,gemini-2.0-flash"
 
     auth_enabled: bool = True
     log_level: str = "INFO"
@@ -62,7 +61,7 @@ class Settings(BaseSettings):
     github_app_private_key: str = ""  # PEM contents OR a file path
     github_webhook_secret: str = ""
     github_api_base: str = "https://api.github.com"
-    github_review_model: str = "qwen2.5-coder:7b"
+    github_review_model: str = "gpt-4o-mini"
     log_format: str = "text"
 
     upload_dir: str = "uploads"
@@ -93,7 +92,7 @@ class Settings(BaseSettings):
             "team_lead_deliver": self.agent_timeout_deliver,
         }
 
-    def validate(self) -> None:
+    def validate(self) -> None:  # type: ignore
         errors: list[str] = []
         if not self.database_url:
             errors.append("AGENTFORGE_DATABASE_URL is required")

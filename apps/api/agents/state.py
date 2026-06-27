@@ -1,4 +1,13 @@
-from typing import Any, NotRequired, TypedDict
+import operator
+from typing import Annotated, Any, NotRequired, TypedDict
+
+
+def merge_validation_results(left: dict | None, right: dict | None) -> dict:
+    if left is None:
+        left = {}
+    if right is None:
+        right = {}
+    return {**left, **right}
 
 
 class TaskInfo(TypedDict):
@@ -34,7 +43,7 @@ class AgentState(TypedDict):
     aggregator_output: NotRequired[str | None]
     delivery: str | None
     current_step: str
-    messages: list[AgentMessage]
+    messages: Annotated[list[AgentMessage], operator.add]
     errors: list[str]
     review_attempts: NotRequired[int]
     fast_demo_mode: NotRequired[bool]
@@ -47,3 +56,4 @@ class AgentState(TypedDict):
     project_id: NotRequired[str]
     # Database session (would be passed in a real implementation)
     db: NotRequired[Any]
+    evidence_validation_result: Annotated[dict, merge_validation_results]

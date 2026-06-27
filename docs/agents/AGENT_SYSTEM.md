@@ -38,15 +38,15 @@ Each agent is defined by a system prompt, default model size, and localized stat
 
 | Role | Default Model | Responsibility |
 |:---|:---:|:---|
-| **Team Lead (Plan)** | `qwen3.5:4b` | Parses user requirements, identifies scope, and builds initial high-level deliverables. |
-| **Planner** | `qwen2.5-coder:7b` | Translates deliverables into concrete step-by-step implementation subtasks. |
-| **Architect** | `qwen2.5-coder:7b` | Checks structural designs against standard programming patterns. |
-| **Builder** | `qwen2.5-coder:7b` | Generates the code files, API handlers, and DB migration queries. |
-| **Reviewer** | `phi4-mini` | Evaluates builder output, looking for syntax, design patterns, and naming conventions. |
-| **Tester** | `phi4-mini` | Generates test cases matching the generated functionality. |
-| **Security** | `phi4-mini` | Identifies credentials at risk of exposure, SQL injection vectors, and auth leaks. |
-| **Deployment** | `phi4-mini` | Validates compilation safety, file exists rules, and migration run readiness. |
-| **Team Lead (Deliver)**| `qwen3.5:4b` | Gathers outputs from all quality checks, formatting a clean unified report for user feedback. |
+| **Team Lead (Plan)** | [User-configured model] | Parses user requirements, identifies scope, and builds initial high-level deliverables. |
+| **Planner** | [User-configured model] | Translates deliverables into concrete step-by-step implementation subtasks. |
+| **Architect** | [User-configured model] | Checks structural designs against standard programming patterns. |
+| **Builder** | [User-configured model] | Generates the code files, API handlers, and DB migration queries. |
+| **Reviewer** | [User-configured model] | Evaluates builder output, looking for syntax, design patterns, and naming conventions. |
+| **Tester** | [User-configured model] | Generates test cases matching the generated functionality. |
+| **Security** | [User-configured model] | Identifies credentials at risk of exposure, SQL injection vectors, and auth leaks. |
+| **Deployment** | [User-configured model] | Validates compilation safety, file exists rules, and migration run readiness. |
+| **Team Lead (Deliver)**| [User-configured model] | Gathers outputs from all quality checks, formatting a clean unified report for user feedback. |
 
 ---
 

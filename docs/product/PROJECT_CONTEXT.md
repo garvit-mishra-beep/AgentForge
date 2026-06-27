@@ -9,7 +9,7 @@
 ### Done
 
 - Monorepo scaffold with Turborepo (apps/web, apps/api, packages/db, packages/types, packages/ui)
-- Clerk authentication (email/password, Google OAuth, GitHub OAuth)
+- Local JWT authentication (email/password login and sign-up with bcrypt)
 - Project CRUD (create, list, get, update, delete)
 - Team CRUD with agent role-to-model assignment
 - LangGraph agent execution graph (3 roles: Team Lead, Backend Engineer, Reviewer)
@@ -58,7 +58,7 @@
 | P1-005 | Redis JWT cache keys have no TTL — memory leak under load | High | Assigned |
 | P1-006 | Model selector saves without validating API key | High | Open |
 
-See full list in [BUGS.md](BUGS.md)
+See full list in [BUGS.md](../archive/BUGS.md)
 
 ---
 

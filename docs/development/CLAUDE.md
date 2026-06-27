@@ -15,7 +15,7 @@ AgentForge is an AI-powered multi-agent orchestration platform. It replaces the 
 - **Agent:** LangGraph, OpenAI SDK, Anthropic SDK, Google Generative AI SDK
 - **Database:** PostgreSQL 16 + pgvector, Prisma ORM (TypeScript client)
 - **Infra:** Docker Compose (local), Turborepo, pnpm 9
-- **Auth:** Clerk (frontend SDK + backend JWT validation)
+- **Auth:** Local JWT authentication (bcrypt password hashing, PyJWT tokens)
 
 ## Folder Structure
 
@@ -24,7 +24,7 @@ agentforge/
 ├── apps/
 │   ├── web/                    # Next.js 15 App Router
 │   │   ├── app/                # Route groups and pages
-│   │   │   ├── (auth)/         # Sign-in, sign-up (Clerk pages)
+│   │   │   ├── (auth)/         # Local login, sign-up forms
 │   │   │   ├── dashboard/      # Dashboard page
 │   │   │   ├── team-builder/   # Team configuration
 │   │   │   ├── tasks/[id]/     # Task detail view

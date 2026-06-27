@@ -1,9 +1,9 @@
 import sys
-sys.modules["langchain"] = None
+
+sys.modules["langchain"] = None  # type: ignore
 
 from contextlib import asynccontextmanager
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
@@ -11,7 +11,7 @@ from app.auth import create_token
 from app.main import app
 from core.config import settings
 from core.database import DatabasePool
-from core.redis import rate_limit_reset, brute_force_reset
+from core.redis import brute_force_reset, rate_limit_reset
 
 settings.auth_enabled = True
 
@@ -37,6 +37,8 @@ async def setup_db():
 @pytest_asyncio.fixture(autouse=True)
 async def clean_tables(setup_db):
     yield
+    from core.task_tracker import tracker
+    await tracker.shutdown(timeout=1.0)
     pool = app.state.db
     tables = [
         "agent_memories", "project_files", "project_teams", "projects",

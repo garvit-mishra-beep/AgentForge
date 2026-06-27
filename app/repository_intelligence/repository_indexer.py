@@ -92,8 +92,8 @@ class RepositoryIndexer:
                 file_info = FileInfo(
                     path=str(file_path.relative_to(self.repo_path)),
                     absolute_path=str(file_path),
-                    size=st stat.st_size,
-                    modified_time=st stat.st_mtime,
+                    size=stat.st_size,
+                    modified_time=stat.st_mtime,
                     is_file=True,
                     is_directory=False,
                     extension=ext,

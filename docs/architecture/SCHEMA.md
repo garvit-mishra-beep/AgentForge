@@ -11,13 +11,13 @@
 │    users     │       │    projects      │
 │──────────────│       │──────────────────│
 │ id (UUID)    │──┐    │ id (UUID)        │
-│ clerk_id (T) │  │    │ name (T)         │
-│ email (T)    │  │    │ description (T)  │
-│ name (T)     │  │    │ owner_id (UUID)  │──┐
-│ avatar_url(T)│  │    │ created_at (TS)  │  │
-│ created_at   │  │    │ updated_at (TS)  │  │
-│ updated_at   │  │    └────────┬─────────┘  │
-└──────────────┘  │             │            │
+│ email (T)    │  │    │ name (T)         │
+│ name (T)     │  │    │ description (T)  │
+│ password_hash│  │    │ owner_id (UUID)  │──┐
+│ created_at   │  │    │ created_at (TS)  │  │
+│              │  │    │ updated_at (TS)  │  │
+└──────────────┘  │    └────────┬─────────┘  │
+                  │             │            │
                   │             │            │
                   │    ┌────────┴─────────┐  │
                   │    │  project_members │  │
@@ -132,12 +132,10 @@
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | `UUID` | PK, DEFAULT gen_random_uuid() | Internal user ID |
-| `clerk_id` | `VARCHAR(255)` | UNIQUE, NOT NULL | Clerk user ID |
 | `email` | `VARCHAR(255)` | UNIQUE, NOT NULL | User email |
 | `name` | `VARCHAR(255)` | NOT NULL | Display name |
-| `avatar_url` | `TEXT` | NULL | Profile image URL |
+| `password_hash` | `VARCHAR(128)` | NOT NULL | Bcrypt hashed password |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT NOW() | |
-| `updated_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT NOW() | |
 
 ### projects
 

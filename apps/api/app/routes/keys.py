@@ -1,11 +1,11 @@
 import uuid
-from typing import List, Optional
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Query, status
-from sqlalchemy import select, update, delete, and_, or_
-from sqlalchemy.ext.asyncio import AsyncSession
+AsyncSession = Any
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
-from app.auth import require_user, DEMO_USER_ID
+from app.auth import require_user
+from core.dependencies import get_db
 from core.encryption import EncryptionService
 from core.validation import (
     get_provider_info,
@@ -13,21 +13,18 @@ from core.validation import (
     validate_key_live,
 )
 from models.schemas import (
+    ApiEndpointCreate,
+    ApiEndpointResponse,
+    ApiEndpointUpdate,
     ApiKeyCreate,
     ApiKeyResponse,
     ApiKeyUpdate,
     ApiKeyValidateRequest,
     ApiKeyValidateResponse,
     ProviderInfoResponse,
-    ApiEndpointCreate,
-    ApiEndpointResponse,
-    ApiEndpointUpdate,
-    UsageStatsResponse,
     UsageDataPoint,
+    UsageStatsResponse,
 )
-from core.config import settings
-from core.dependencies import get_db
-from sqlalchemy.sql import func
 
 router = APIRouter(prefix="/keys", tags=["keys"])
 
@@ -60,8 +57,8 @@ async def get_user_api_key(
     db: AsyncSession,
     user_id: str,
     provider: str,
-    project_id: Optional[str] = None
-) -> dict:
+    project_id: str | None = None
+) -> dict | None:
     """Get decrypted API key for user/provider/project."""
     query = """
         SELECT id, encrypted_key, key_preview, is_enabled, provider_config
@@ -82,7 +79,7 @@ async def get_user_api_key(
     if not row:
         return None
 
-    enc = get_encryption(None)  # We'll pass request later if needed
+    enc = get_encryption(None)  # type: ignore
     decrypted_key = enc.decrypt(row["encrypted_key"])
 
     return {
@@ -131,7 +128,7 @@ async def create_api_key(
     body: ApiKeyCreate,
     request: Request,
     user_id: str = Depends(require_user),
-    project_id: Optional[str] = Query(None, description="Project ID for project-scoped key"),
+    project_id: str | None = Query(None, description="Project ID for project-scoped key"),
     db: AsyncSession = Depends(get_db)
 ) -> ApiKeyResponse:
     enc = get_encryption(request)
@@ -191,14 +188,14 @@ async def create_api_key(
     return _row_to_response(row)
 
 
-@router.get("", response_model=List[ApiKeyResponse])
+@router.get("", response_model=list[ApiKeyResponse])
 async def list_api_keys(
     request: Request,
     user_id: str = Depends(require_user),
-    project_id: Optional[str] = Query(None, description="Filter by project ID"),
+    project_id: str | None = Query(None, description="Filter by project ID"),
     include_disabled: bool = Query(False, description="Include disabled keys"),
     db: AsyncSession = Depends(get_db)
-) -> List[ApiKeyResponse]:
+) -> list[ApiKeyResponse]:
     # Build query
     query = """
         SELECT id, provider, key_preview, is_enabled, created_at, updated_at, is_default
@@ -263,7 +260,6 @@ async def update_api_key(
     provider = existing["provider"]
     encrypted = existing["encrypted_key"]
     preview = None
-    is_default = None
 
     # Update key if provided
     if body.key is not None:
@@ -310,7 +306,7 @@ async def update_api_key(
         return _row_to_response(row)
 
     # Add updated_at and key_id/user_id for WHERE clause
-    set_clauses.append(f"updated_at = NOW()")
+    set_clauses.append("updated_at = NOW()")
     params.extend([key_id, user_id])
 
     query = f"""
@@ -391,7 +387,7 @@ async def create_api_endpoint(
     body: ApiEndpointCreate,
     request: Request,
     user_id: str = Depends(require_user),
-    project_id: Optional[str] = Query(None, description="Project ID for project-scoped endpoint"),
+    project_id: str | None = Query(None, description="Project ID for project-scoped endpoint"),
     db: AsyncSession = Depends(get_db)
 ) -> ApiEndpointResponse:
     # Validate that if api_key_id is provided, it belongs to the user
@@ -452,14 +448,14 @@ async def create_api_endpoint(
     return _endpoint_to_response(row)
 
 
-@router.get("/endpoints", response_model=List[ApiEndpointResponse])
+@router.get("/endpoints", response_model=list[ApiEndpointResponse])
 async def list_api_endpoints(
     request: Request,
     user_id: str = Depends(require_user),
-    project_id: Optional[str] = Query(None, description="Filter by project ID"),
-    provider: Optional[str] = Query(None, description="Filter by provider"),
+    project_id: str | None = Query(None, description="Filter by project ID"),
+    provider: str | None = Query(None, description="Filter by provider"),
     db: AsyncSession = Depends(get_db)
-) -> List[ApiEndpointResponse]:
+) -> list[ApiEndpointResponse]:
     # Build query
     query = """
         SELECT id, user_id, project_id, provider, name, base_url, api_key_id, is_default,
@@ -536,7 +532,7 @@ async def update_api_endpoint(
 
     # Build update query dynamically
     set_clauses = []
-    params = []
+    params: list[Any] = []
     param_idx = 1
 
     if body.name is not None:
@@ -609,7 +605,7 @@ async def update_api_endpoint(
         return _endpoint_to_response(row)
 
     # Add updated_at and IDs for WHERE clause
-    set_clauses.append(f"updated_at = NOW()")
+    set_clauses.append("updated_at = NOW()")
     params.extend([endpoint_id, user_id])
 
     query = f"""
@@ -643,7 +639,7 @@ async def delete_api_endpoint(
 async def get_usage_stats(
     request: Request,
     user_id: str = Depends(require_user),
-    project_id: Optional[str] = Query(None, description="Filter by project ID"),
+    project_id: str | None = Query(None, description="Filter by project ID"),
     days: int = Query(30, ge=1, le=365, description="Number of days to look back"),
     db: AsyncSession = Depends(get_db)
 ) -> UsageStatsResponse:
@@ -741,7 +737,7 @@ async def _is_first_key_for_user_provider(
     db: AsyncSession,
     user_id: str,
     provider: str,
-    project_id: Optional[str]
+    project_id: str | None
 ) -> bool:
     """Check if this is the first key for the user/provider/project combination."""
     query = """
@@ -765,7 +761,7 @@ async def _is_first_endpoint_for_user_provider(
     db: AsyncSession,
     user_id: str,
     provider: str,
-    project_id: Optional[str]
+    project_id: str | None
 ) -> bool:
     """Check if this is the first endpoint for the user/provider/project combination."""
     query = """
@@ -820,7 +816,7 @@ async def get_provider_config(
     user_id: str,
     provider_type: str,
     model: str,
-    project_id: Optional[str] = None
+    project_id: str | None = None
 ) -> dict:
     """
     Get provider configuration (API key, endpoint, etc.) for use in agent nodes.
@@ -885,9 +881,8 @@ async def _get_provider_config_for_project(
         )
 
         base_url = None
-        api_key_id = None
-        headers = {}
-        endpoint_config = {}
+        headers: dict[str, Any] = {}
+        endpoint_config: dict[str, Any] = {}
 
         if endpoint_row:
             base_url = endpoint_row["base_url"]
@@ -954,9 +949,8 @@ async def _get_provider_config_for_user(
         )
 
         base_url = None
-        api_key_id = None
-        headers = {}
-        endpoint_config = {}
+        headers: dict[str, Any] = {}
+        endpoint_config: dict[str, Any] = {}
 
         if endpoint_row:
             base_url = endpoint_row["base_url"]

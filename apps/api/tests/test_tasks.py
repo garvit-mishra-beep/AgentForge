@@ -97,9 +97,10 @@ async def test_create_task_against_unowned_team_is_rejected(client):
     """A user cannot target a team they do not own (IDOR #4)."""
     import uuid as _uuid
 
+    from httpx import ASGITransport, AsyncClient
+
     from app.auth import create_token
     from app.main import app
-    from httpx import ASGITransport, AsyncClient
 
     # Attacker owns a valid, fully-staffed team of their own...
     db = app.state.db

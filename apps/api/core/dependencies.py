@@ -2,12 +2,10 @@
 Dependency injection helpers for FastAPI endpoints.
 """
 
-from typing import AsyncGenerator
 
-from fastapi import Depends, Request
+from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.config import settings
 from core.encryption import EncryptionService
 
 

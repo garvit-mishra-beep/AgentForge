@@ -335,7 +335,7 @@ class SymbolExtractor:
                 try:
                     ann_str = ast.unparse(arg.annotation) if hasattr(ast, 'unparse') else str(arg.annotation)
                     arg_str += f": {ann_str}"
-                except:
+                except Exception:
                     arg_str += ": <type>"
             args.append(arg_str)
 
@@ -350,7 +350,7 @@ class SymbolExtractor:
                 try:
                     ann_str = ast.unparse(arg.annotation) if hasattr(ast, 'unparse') else str(arg.annotation)
                     arg_str += f": {ann_str}"
-                except:
+                except Exception:
                     arg_str += ": <type>"
             args.append(arg_str)
 
@@ -364,7 +364,7 @@ class SymbolExtractor:
             try:
                 ret_str = ast.unparse(node.returns) if hasattr(ast, 'unparse') else str(node.returns)
                 returns = f" -> {ret_str}"
-            except:
+            except Exception:
                 returns = " -> <type>"
 
         return f"({', '.join(args)}){returns}"

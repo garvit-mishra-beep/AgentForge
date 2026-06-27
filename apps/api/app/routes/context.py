@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.auth import require_user
-from app.file_parser import parse_file, ParsedFile
+from app.file_parser import ParsedFile, parse_file
 
 router = APIRouter(prefix="/projects/{project_id}/context", tags=["context"])
 
@@ -57,7 +57,6 @@ async def parse_file_context(
         raise HTTPException(status_code=404, detail="File not found")
 
     file_path = str(row["filepath"])
-    filename = str(row["filename"])
 
     # Parse
     try:
@@ -122,7 +121,7 @@ async def parse_file_context(
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             """,
             str(uuid.uuid4()), actual_ctx_id, sym.symbol_type, sym.name,
-            sym.line_start, sym.line_end, sig_short := sym.signature[:500],
+            sym.line_start, sym.line_end, sym.signature[:500],
             sym.docstring, sym.visibility,
             json.dumps(sym.metadata) if sym.metadata else "{}",
         )

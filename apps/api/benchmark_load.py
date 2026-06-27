@@ -10,7 +10,6 @@ import argparse
 import asyncio
 import statistics
 import time
-import uuid
 
 import httpx
 
@@ -72,7 +71,7 @@ async def main():
     parser.add_argument("--duration", type=int, default=10, help="Benchmark duration in seconds")
     args = parser.parse_args()
 
-    print(f"AgentForge Load Benchmark")
+    print("AgentForge Load Benchmark")
     print(f"  Base URL: {args.base_url}")
     print(f"  Users:    {args.users}")
     print(f"  Duration: {args.duration}s")

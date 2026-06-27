@@ -7,7 +7,7 @@ A *condition* is a way of solving a task, expressed as a ``Solver``. We ship:
                                the multi-agent hypothesis: does a review+repair
                                loop beat a single pass?
   - ``MockSolver``           — deterministic, no network. Lets the harness + its
-                               numbers be unit-tested in CI without Ollama.
+                               numbers be unit-tested in CI without an external provider.
 
 The runner scores every (condition, task) pair with :mod:`benchmarks.scorer`,
 aggregates pass-rate / mean-score per condition, and reports the *computed* lift
@@ -30,7 +30,7 @@ class Solver(Protocol):
         ...
 
 
-# ── Real solvers (require a live provider, e.g. Ollama) ────────────────────
+# ── Real solvers (require a live provider, e.g., a remote API) ────────────────────
 
 
 @dataclass
@@ -219,8 +219,8 @@ async def run_benchmark(
 def _build_solvers_from_env() -> list[Solver]:
     """Default real-run configuration (override by editing or importing)."""
     return [
-        SingleModelSolver("qwen2.5-coder:7b"),
-        TeamReviewSolver(builder_model="qwen2.5-coder:7b", reviewer_model="phi4-mini"),
+        SingleModelSolver("gpt-4o-mini"),
+        TeamReviewSolver(builder_model="gpt-4o", reviewer_model="gpt-4o-mini"),
     ]
 
 
@@ -228,15 +228,16 @@ if __name__ == "__main__":
     import argparse
     import json
     import sys
+    from typing import Any
 
     parser = argparse.ArgumentParser(description="Run the AgentForge benchmark")
-    parser.add_argument("--mock", action="store_true", help="Use deterministic mock solvers (no Ollama)")
+    parser.add_argument("--mock", action="store_true", help="Use deterministic mock solvers (no live API calls)")
     parser.add_argument("--no-tests", action="store_true", help="Skip sandboxed test execution")
     parser.add_argument("--out", default="benchmark_results.json")
     args = parser.parse_args()
 
     if args.mock:
-        solvers = [MockSolver("buggy"), MockSolver("good")]
+        solvers: list[Any] = [MockSolver("buggy"), MockSolver("good")]
     else:
         solvers = _build_solvers_from_env()
 

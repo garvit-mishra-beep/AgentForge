@@ -4,58 +4,39 @@ Integrates the Evidence Gate system into the agent workflow.
 """
 import json
 import logging
-from typing import Dict, Any
-
-from agents.sanitize import wrap_context, wrap_task
-from agents.state import AgentState
-from agents.utils import _is_timeout, call_with_timeout, load_prompt_template
-from core.config import settings
-from core.providers import get_provider, get_provider_for_user
+import os
 
 # Import our evidence gate components
 import sys
-import os
+from datetime import UTC, datetime
+from typing import Any
+
+from agents.state import AgentState
+from core.providers import get_provider, get_provider_for_user  # noqa: F401
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'app')))
-from evidence_gate.core import EvidencePackage, EvidenceValidator, EvidenceItem
+from evidence_gate.core import EvidencePackage, EvidenceValidator
 
 logger = logging.getLogger(__name__)
 
 
-async def evidence_validator_node(state: AgentState) -> AgentState:
+async def evidence_validator_node(state: AgentState) -> dict[str, Any]:
     """
     Agent node that validates evidence packages from other agents.
     This can be inserted into the workflow to enforce evidence-based approvals.
     """
     logger.info("Evidence Validator phase")
 
-    # Get user and project context from state (with fallbacks)
-    user_id = state.get("user_id", "00000000-0000-0000-0000-000000000001")
-    project_id = state.get("project_id")
-    db = state.get("db")  # Database session would be passed in state in a real implementation
-
-    # Get the model for the evidence validator (could reuse team lead or have dedicated)
-    model = state["team_config"].get("evidence_validator", {}).get("model",
-                  state["team_config"].get("team_lead", {}).get("model", "default"))
-
-    # Try to get user-specific provider configuration
-    provider = None
-    if db:
-        try:
-            provider, _ = await get_provider_for_user(
-                model=model,
-                user_id=user_id,
-                project_id=project_id,
-                db=db
-            )
-        except Exception as e:
-            logger.warning("Failed to get user-specific provider, falling back to default: %s", e)
-            provider = get_provider(model)
+    ev_config = state["team_config"].get("evidence_validator")
+    tl_config = state["team_config"].get("team_lead")
+    if ev_config and "model" in ev_config:
+        model = ev_config["model"]
+    elif tl_config and "model" in tl_config:
+        model = tl_config["model"]
     else:
-        # Fall back to default provider resolution
-        provider = get_provider(model)
+        model = "default"
 
-    timeout_s = settings.agent_timeout.get("evidence_validator", 30)
-    max_tokens = settings.max_output_tokens if settings.fast_demo_mode else None
+    # No LLM calls are needed since validation runs locally, so provider resolution is bypassed.
 
     # Prepare inputs. In a real implementation, we would extract evidence packages from the state
     # For now, we'll create a placeholder validation based on existing outputs
@@ -128,10 +109,6 @@ async def evidence_validator_node(state: AgentState) -> AgentState:
             "validation": validation_result
         })
 
-        # Store validation results in state for potential use by other agents
-        validation_key = f"validation_{output_info['agent_name']}"
-        state[validation_key] = validation_result
-
     # Create a summary validation result
     overall_valid = all(v["validation"]["is_valid"] for v in validation_results)
     overall_confidence = sum(v["validation"]["evidence_adequacy"] for v in validation_results) / max(len(validation_results), 1)
@@ -144,19 +121,27 @@ async def evidence_validator_node(state: AgentState) -> AgentState:
         "individual_validations": validation_results
     }
 
-    # Store the summary in state
-    state["evidence_validation_result"] = json.dumps(summary)
-    state["current_step"] = state.get("current_step", "unknown") + "_evidence_validated"
-
-    state["messages"].append({
-        "role": "evidence_validator",
-        "model": model,
-        "content": json.dumps(summary, indent=2),
-        "message_type": "evidence_validation",
-        "metadata": {
-            "validated_at": "now"
-        }
-    })
+    results_dict = {
+        v["agent"]: v["validation"] for v in validation_results
+    }
 
     logger.info("Evidence Validation complete")
-    return state
+    updates: dict[str, Any] = {
+        "evidence_validation_result": results_dict,
+        "messages": [{
+            "role": "evidence_validator",
+            "model": model,
+            "content": json.dumps(summary, indent=2),
+            "message_type": "evidence_validation",
+            "metadata": {
+                "validated_at": datetime.now(UTC).isoformat()
+            }
+        }]
+    }
+
+    # Only update current_step if not in parallel execution to avoid concurrent updates conflict
+    current_step = state.get("current_step", "unknown")
+    if current_step not in ("reviewer", "tester", "security"):
+        updates["current_step"] = current_step + "_evidence_validated"
+
+    return updates

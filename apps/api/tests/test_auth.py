@@ -3,7 +3,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.auth import create_token, verify_token, DEMO_USER_ID
+from app.auth import DEMO_USER_ID, create_token, verify_token
 from app.main import app
 from core.config import settings
 from core.redis import brute_force_reset

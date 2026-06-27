@@ -390,12 +390,22 @@ class AcceptanceTestGenerator:
         ]
 
         for test in tests:
+            given_step = ""
+            when_step = ""
+            then_step = ""
+            if len(test.steps) > 0:
+                given_step = test.steps[0].split(': ', 1)[1] if ': ' in test.steps[0] else test.steps[0]
+            if len(test.steps) > 1:
+                when_step = test.steps[1].split(': ', 1)[1] if ': ' in test.steps[1] else test.steps[1]
+            if len(test.steps) > 2:
+                then_step = test.steps[2].split(': ', 1)[1] if ': ' in test.steps[2] else test.steps[2]
+
             feature_lines.extend([
                 "",
                 f"  Scenario: {test.name}",
-                f"    Given {test.steps[0].split(': ', 1)[1] if ': ' if ': ' in test.steps[0] else test.steps[0] if len(test.steps) > 0 else ''}",
-                f"    When {test.steps[1].split(': ', 1)[1] if ': ' in test.steps[1] and len(test.steps) > 1 else test.steps[1] if len(test.steps) > 1 else ''}",
-                f"    Then {test.steps[2].split(': ', 1)[1] if ': ' in test.steps[2] and len(test.steps) > 2 else test.steps[2] if len(test.steps) > 2 else ''}"
+                f"    Given {given_step}",
+                f"    When {when_step}",
+                f"    Then {then_step}"
             ])
 
         return "\n".join(feature_lines)

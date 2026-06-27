@@ -56,8 +56,7 @@ graph LR
   Router --> Orchestrator[agents/orchestrator.run_task]
   Orchestrator --> Graph[agents/graph.py]
   Graph --> Nodes[agents/nodes/*]
-  Nodes --> Providers[core/providers.py]
-  Providers --> LLMs[(OpenAI · Anthropic · Gemini · Ollama)]
+  Providers --> LLMs[(OpenAI · Anthropic · Gemini)]
   Router --> DB[(PostgreSQL + pgvector)]
   Router --> Redis[(Redis)]
 ```

@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from app.auth import require_user
 from app.feedback_service import feedback_stats, record_feedback
-from models.agent_outputs import Finding
+from models.agent_outputs import Finding, Severity
 
 router = APIRouter(prefix="/feedback", tags=["feedback"])
 
@@ -30,7 +30,7 @@ async def submit_feedback(
     user_id: str = Depends(require_user),
 ):
     db = _db(request)
-    fingerprint = Finding(title=body.title, file=body.file, severity=body.severity).fingerprint()
+    fingerprint = Finding(title=body.title, file=body.file, severity=Severity(body.severity)).fingerprint()
     await record_feedback(
         db,
         user_id=user_id,

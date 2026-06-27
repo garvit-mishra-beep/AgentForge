@@ -3,20 +3,18 @@ Sandbox Execution Service for AgentForge.
 Provides secure, isolated execution environments for running untrusted code.
 """
 import asyncio
-import json
+import logging
 import os
+import shutil
 import tempfile
 import time
-import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Any
-import logging
-import shutil
+from typing import Any
 
 try:
     import docker
-    from docker.errors import DockerException, ContainerError, ImageNotFound, NotFound, APIError
+    from docker.errors import ImageNotFound
     DOCKER_AVAILABLE = True
 except ImportError:
     DOCKER_AVAILABLE = False
@@ -67,17 +65,17 @@ class SandboxConfig:
     read_only_root: bool = True
     tmpfs_size: str = "64M"  # Size for /tmp mount
     max_execution_time: int = 30  # Seconds
-    allowed_paths: List[str] = field(default_factory=list)  # Host paths allowed to mount
-    environment_vars: Dict[str, str] = field(default_factory=dict)
+    allowed_paths: list[str] = field(default_factory=list)  # Host paths allowed to mount
+    environment_vars: dict[str, str] = field(default_factory=dict)
     user_id: int = 1000  # Non-root user
     group_id: int = 1000
-    add_capabilities: List[str] = field(default_factory=list)  # Additional capabilities to keep
+    add_capabilities: list[str] = field(default_factory=list)  # Additional capabilities to keep
     drop_all_capabilities: bool = True  # Drop all Linux capabilities by default
     no_new_privileges: bool = True  # Prevent privilege escalation
     private_tmp: bool = True  # Private /tmp directory
     proc_isolation: bool = True  # PID namespace isolation
-    uid_map: Optional[str] = None  # User namespace mapping
-    gid_map: Optional[str] = None  # Group namespace mapping
+    uid_map: str | None = None  # User namespace mapping
+    gid_map: str | None = None  # Group namespace mapping
 
 
 @dataclass
@@ -90,8 +88,8 @@ class ExecutionResult:
     execution_time_ms: int
     timeout: bool
     oom_killed: bool
-    files_created: Dict[str, str] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    files_created: dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class SandboxExecutor:
@@ -293,9 +291,9 @@ class SandboxExecutor:
     async def execute_in_sandbox(
         self,
         image: str,
-        command: List[str],
-        files: Dict[str, str],
-        config: Optional[SandboxConfig] = None
+        command: list[str],
+        files: dict[str, str],
+        config: SandboxConfig | None = None
     ) -> ExecutionResult:
         """
         Execute a command in a sandboxed container.
@@ -319,9 +317,6 @@ class SandboxExecutor:
             logger.warning("Docker not available, using basic execution (limited security)")
             return await self._execute_basic(command, files, config)
 
-        # Create temporary directory for preparation
-        import tempfile
-        import shutil
         host_files_dir = tempfile.mkdtemp(dir=self.temp_dir_base, prefix="sandbox_")
         workspace_dir = os.path.join(host_files_dir, "workspace")
         os.makedirs(workspace_dir, exist_ok=True)
@@ -409,7 +404,7 @@ class SandboxExecutor:
                             file_path = os.path.join(root, file_name)
                             rel_path = os.path.relpath(file_path, workspace_dir)
                             try:
-                                with open(file_path, 'r', encoding='utf-8') as f:
+                                with open(file_path, encoding='utf-8') as f:
                                     files_created[rel_path] = f.read()
                             except (UnicodeDecodeError, OSError):
                                 # Skip binary files
@@ -464,10 +459,9 @@ class SandboxExecutor:
 
     def _create_host_config(self, config: SandboxConfig):
         """Create Docker host configuration based on security settings."""
-        from docker.types import Mount
 
         # Prepare host config parameters
-        host_config_params = {}
+        host_config_params: dict[str, Any] = {}
 
         # Memory limit
         if config.resource_limits.memory_mb > 0:
@@ -485,7 +479,6 @@ class SandboxExecutor:
             host_config_params["pids_limit"] = config.resource_limits.max_processes
 
         # Security options
-        security_opts = []
         if config.no_new_privileges:
             # Note: This might need to be "no-new-privileges:true" depending on Docker version
             try:
@@ -545,22 +538,17 @@ class SandboxExecutor:
 
     async def _execute_basic(
         self,
-        command: List[str],
-        files: Dict[str, str],
+        command: list[str],
+        files: dict[str, str],
         config: SandboxConfig
     ) -> ExecutionResult:
         """
         Basic fallback execution when Docker is not available.
         This provides minimal security through process restrictions.
         """
-        import subprocess
-        import signal
 
         start_time = time.time()
 
-        # Create temporary directory for files
-        import tempfile
-        import shutil
         host_files_dir = tempfile.mkdtemp(dir=self.temp_dir_base, prefix="basic_sandbox_")
         workspace_dir = os.path.join(host_files_dir, "workspace")
         os.makedirs(workspace_dir, exist_ok=True)
@@ -594,7 +582,7 @@ class SandboxExecutor:
                     timeout=config.max_execution_time
                 )
                 timeout_occurred = False
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 timeout_occurred = True
                 try:
                     proc.kill()
@@ -619,14 +607,14 @@ class SandboxExecutor:
                         file_path = os.path.join(root, file_name)
                         rel_path = os.path.relpath(file_path, workspace_dir)
                         try:
-                            with open(file_path, 'r', encoding='utf-8') as f:
+                            with open(file_path, encoding='utf-8') as f:
                                 files_created[rel_path] = f.read()
                         except (UnicodeDecodeError, OSError):
                             pass
 
             return ExecutionResult(
                 success=(exit_code == 0),
-                exit_code=exit_code,
+                exit_code=exit_code if exit_code is not None else -1,
                 stdout=stdout_str,
                 stderr=stderr_str,
                 execution_time_ms=execution_time_ms,
@@ -649,7 +637,7 @@ class SandboxExecutor:
                 stderr=f"Basic execution failed: {str(e)}",
                 execution_time_ms=execution_time_ms,
                 timeout=False,
-                oom_kelled=False,
+                oom_killed=False,
                 metadata={"error": str(e)}
             )
 

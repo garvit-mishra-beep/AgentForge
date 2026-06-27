@@ -29,7 +29,7 @@ def test_repository_intelligence_basic():
 
         # Create a simple Python file
         test_file = temp_path / "test_module.py"
-        test_file.write_text("""
+        test_file.write_text('''
 def hello_world():
     """Say hello to the world."""
     print("Hello, World!")
@@ -51,7 +51,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-""")
+''')
 
         # Create a requirements.txt file
         req_file = temp_path / "requirements.txt"

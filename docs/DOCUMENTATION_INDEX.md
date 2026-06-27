@@ -49,6 +49,12 @@ docs/
 │   ├── ROADMAP.md                             # Release Roadmap
 │   └── V1_RELEASE_READINESS.md                # QA validation status
 │
+├── scripts/
+│   └── README.md                              # Scripts & Developer Utilities
+│
+├── tests/
+│   └── README.md                              # Global Test Suites Documentation
+│
 └── archive/                                   # Archived historical documents
     ├── AUDIT.md
     ├── BUGS.md

@@ -13,11 +13,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 * **PyJWT local JWT authentication:** Replaced third-party Clerk dependencies with local bcrypt password hashing, access/refresh tokens, and native middleware.
 * **Tenant Isolation:** Enforced database queries and task access filtering scoped by active `user_id` context.
 * **Reorganized Repository Structure:** Cleaned root workspace by archiving historical audits, establishing standard documentation root files, and aligning subfolder layouts.
+* **Verification Script Relocations:** Relocated loose root verification python scripts (`quick_verify_sandbox.py`, `verify_github_implementation.py`, `verify_sandbox_implementation.py`) to the `/scripts` directory and updated their path environments.
+* **Test Module Relocations:** Relocated loose root tests (`test_evidence_gate.py`, `test_github_enhanced.py`, `test_repository_intelligence.py`, `test_validation_system.py`) to `apps/api/tests/` to run as part of the backend test suite.
 
 ### Fixed
 * **LLM Provider Resolution:** Fixed fallback configuration checks preventing KeyErrors when retrieving agent timeouts.
 * **Shadowing variables:** Resolved variable shadowing in the code review routes.
 * **Rate Limit Enforcement:** Restored missing token bucket rate checks on the code review submit endpoint.
+* **Nesting triple quotes Syntax Error:** Corrected quote terminations in `test_repository_intelligence.py` by switching outer double-quotes to single-quotes, enabling clean python compilation.
 
 ---
 

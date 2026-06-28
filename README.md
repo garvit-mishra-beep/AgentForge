@@ -7,7 +7,7 @@
 *Coordinate a specialized team of AI agents to plan, build, review, and ship software — with your own API keys, on your own infrastructure.*
 
 [![Tests](https://img.shields.io/badge/tests-208%20passing-brightgreen?style=flat-square&logo=pytest)](apps/api/tests/)
-[![Type Safety](https://img.shields.io/badge/mypy-0%20errors-blue?style=flat-square)](apps/api/)
+[![Type Security](https://img.shields.io/badge/mypy-0%20errors-blue?style=flat-square)](apps/api/)
 [![Linting](https://img.shields.io/badge/ruff-0%20findings-orange?style=flat-square)](apps/api/)
 [![License](https://img.shields.io/badge/license-MIT-purple?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&logo=python)](apps/api/)
@@ -68,9 +68,11 @@ cd apps/api
 python -m venv venv && source venv/bin/activate  # or .\venv\Scripts\Activate.ps1 on Windows
 pip install -r requirements.txt
 
-cp .env.example .env
+cp ../.env.example .env
 # Edit .env — set your JWT_SECRET and at least one provider API key
 ```
+
+> **Note**: The backend environment file is located at `apps/api/.env`. A template with all required variables (including frontend variables) is available in the repository root as `.env.example`.
 
 ### 3. Start the API
 
@@ -221,6 +223,7 @@ AgentForge/
 │   └── release/          # Release audit reports and readiness docs
 │
 ├── scripts/              # Developer utilities and validation scripts
+├── .env.example          # Template containing ALL environment variables (frontend + backend)
 ├── docker-compose.yml    # PostgreSQL + Redis local stack
 ├── Dockerfile            # Production API container (multi-stage)
 ├── CONTRIBUTING.md
@@ -260,7 +263,7 @@ python -m ruff check apps/api  # must be clean
 
 ## 🔒 Security
 
-Found a vulnerability? Please review our [Security Policy](SECURITY.md) and report via the process described there. Do not open a public GitHub issue.
+Found a vulnerability? Please review our [Security Policy](SECURITY.md) and report via the process described there. **Do not open a public GitHub issue.**
 
 ---
 

@@ -19,6 +19,17 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: agentforge-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   api:
     build:
       context: .
@@ -28,12 +39,17 @@ services:
       - "8000:8000"
     environment:
       AGENTFORGE_DATABASE_URL: postgresql://agentforge:agentforge@postgres:5432/agentforge
+      AGENTFORGE_REDIS_URL: redis://redis:6379/0
       AGENTFORGE_AUTH_ENABLED: "true"
-      AGENTFORGE_JWT_SECRET: "${AGENTFORGE_JWT_SECRET:-dev-jwt-secret-do-not-use-in-production-1234}"
+      AGENTFORGE_JWT_SECRET: "${AGENTFORGE_JWT_SECRET}"
+      AGENTFORGE_JWT_REFRESH_SECRET: "${AGENTFORGE_JWT_REFRESH_SECRET}"
+      AGENTFORGE_ENCRYPTION_KEY: "${AGENTFORGE_ENCRYPTION_KEY}"
       AGENTFORGE_LOG_LEVEL: "INFO"
       AGENTFORGE_CORS_ORIGINS: '["http://localhost:3000"]'
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
 

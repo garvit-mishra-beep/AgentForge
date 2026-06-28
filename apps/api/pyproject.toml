@@ -3,6 +3,31 @@ name = "agentforge-api"
 version = "0.1.0"
 description = "AgentForge API — AI Workforce Operating System"
 requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.104.0,<0.105.0",
+    "uvicorn[standard]>=0.27.0,<0.28.0",
+    "python-multipart>=0.0.6,<0.0.7",
+    "python-jose[cryptography]>=3.3.0,<4.0.0",
+    "passlib[bcrypt]>=1.7.4,<1.8.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+    "asyncpg>=0.29.0,<0.30.0",
+    "redis>=5.0.0,<6.0.0",
+    "pydantic>=2.5.0,<3.0.0",
+    "pydantic-settings>=2.1.0,<3.0.0",
+    "langchain>=0.1.0,<0.2.0",
+    "langgraph>=0.0.20,<0.1.0",
+    "openai>=1.3.0,<2.0.0",
+    "anthropic>=0.7.0,<0.8.0",
+    "google-generativeai>=0.3.0,<0.4.0",
+    "httpx>=0.25.0,<0.26.0",
+    "cryptography>=41.0.0,<42.0.0",
+    "bcrypt>=4.0.1,<5.0.0",
+    "jinja2>=3.1.0,<4.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=65.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -21,3 +46,20 @@ ignore = ["E501", "E402", "UP038"]
 [tool.coverage.run]
 source = ["app"]
 omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = [
+    '^venv/',
+    '^\.venv/',
+    '^node_modules/',
+]

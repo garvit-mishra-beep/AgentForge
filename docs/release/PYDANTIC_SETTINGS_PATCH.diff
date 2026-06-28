@@ -1,0 +1,10 @@
+--- a/apps/api/pyproject.toml
++++ b/apps/api/pyproject.toml
+@@ -12,6 +12,7 @@
+     "python-dotenv>=1.0.0,<2.0.0",
+     "asyncpg>=0.29.0,<0.30.0",
+     "redis>=5.0.0,<6.0.0",
+     "pydantic>=2.5.0,<3.0.0",
++    "pydantic-settings>=2.1.0,<3.0.0",
+     "langchain>=0.1.0,<0.2.0",
+     "langgraph>=0.0.20,<0.1.0",

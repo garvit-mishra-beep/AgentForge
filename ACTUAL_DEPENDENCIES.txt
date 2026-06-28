@@ -1,0 +1,38 @@
+# AgentForge Actual Dependencies - Extracted from Source Code Analysis
+# This represents the true dependencies required for the application to function
+
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1  # Explicit version for transparency (comes via passlib)
+
+# Configuration & Environment
+python-dotenv==1.0.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database & Caching
+asyncpg==0.29.0
+redis==5.0.1
+
+# AI Provider Integrations
+openai==1.3.0
+anthropic==0.7.8
+google-generativeai==0.3.2
+httpx==0.25.0
+
+# Core AI/ML Framework (Agent Orchestration)
+langchain==0.1.5
+langgraph==0.0.22
+
+# Cryptography & Utilities
+cryptography==41.0.3
+jinja2==3.1.2
+
+# Hashing (explicit, though also in passlib)
+bcrypt==4.0.1

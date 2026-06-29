@@ -495,15 +495,18 @@ export function registerUser(name: string, email: string, password: string): Pro
   return api.post("/auth/register", { name, email, password });
 }
 
-export function logoutUser(): Promise<void> {
+export async function logoutUser(): Promise<void> {
   const refreshToken = typeof window !== "undefined" ? localStorage.getItem("agentforge_refresh_token") : null;
   const body = refreshToken ? { refresh_token: refreshToken } : {};
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("agentforge_token");
-    localStorage.removeItem("agentforge_refresh_token");
-    localStorage.removeItem("agentforge_user");
+  try {
+    await api.post("/auth/logout", body);
+  } finally {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("agentforge_token");
+      localStorage.removeItem("agentforge_refresh_token");
+      localStorage.removeItem("agentforge_user");
+    }
   }
-  return api.post("/auth/logout", body);
 }
 
 export function getMe(): Promise<{ id: string; email: string; name: string }> {

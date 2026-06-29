@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 
 from pydantic_settings import BaseSettings
 
@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     database_pool_min: int = 2
     database_pool_max: int = 10
 
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     redis_url: str = "redis://localhost:6379/0"
 
@@ -30,6 +30,13 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 480
     jwt_refresh_secret: str = ""
     jwt_refresh_expire_days: int = 7
+    cookie_secure: bool = False
+    frontend_url: str = "http://localhost:3000"
+
+    # Google OAuth
+    google_client_id: str = ""
+    google_client_secret: str = ""
+
 
     max_steps: int = 20
     task_timeout_minutes: int = 10

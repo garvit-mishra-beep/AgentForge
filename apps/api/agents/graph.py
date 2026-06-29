@@ -1,7 +1,30 @@
 import logging
-from typing import Any
+from typing import Any, Callable, Type
 
 from langgraph.graph import END, StateGraph
+from langgraph.graph.graph import Branch
+from langchain_core.runnables import Runnable
+from langgraph.pregel import Channel
+
+# Monkeypatch langgraph Branch to support parallel list routing
+def _patched_runnable(self, input: Any) -> Runnable:
+    result = self.condition(input)
+    if isinstance(result, list):
+        destinations = [self.ends[r] if self.ends else r for r in result]
+        return Channel.write_to(*[f"{d}:inbox" if d != END else END for d in destinations])
+    else:
+        destination = self.ends[result] if self.ends else result
+        return Channel.write_to(f"{destination}:inbox" if destination != END else END)
+
+Branch.runnable = _patched_runnable
+
+from langgraph.channels.binop import BinaryOperatorAggregate
+
+class FanInChannel(BinaryOperatorAggregate):
+    def __init__(self, typ: Type[Any], operator: Callable[[Any, Any], Any]) -> None:
+        self.typ = typ
+        self.operator = operator
+        # Omit initializing self.value to ensure EmptyChannelError is raised when empty
 
 from agents.nodes.aggregator_node import aggregator_node
 from agents.nodes.architect_node import architect_node
@@ -16,6 +39,7 @@ from agents.nodes.tester_node import tester_node
 from agents.state import AgentState
 
 logger = logging.getLogger(__name__)
+
 
 
 def _route_after_builder(state: Any) -> list[Any]:
@@ -39,7 +63,7 @@ def _route_after_builder(state: Any) -> list[Any]:
 
 
 def build_graph() -> Any:
-    workflow = StateGraph(state_schema=AgentState)
+    workflow = StateGraph(AgentState)
 
     # Core sequence with evidence validation checkpoints
     workflow.add_node("team_lead_plan", team_lead_plan_node)
@@ -116,7 +140,13 @@ def build_graph() -> Any:
     workflow.add_conditional_edges(
         "builder_evidence_validation",
         _route_after_builder,
-        ["reviewer", "tester", "security", "aggregator", "team_lead_deliver"]
+        {
+            "reviewer": "reviewer",
+            "tester": "tester",
+            "security": "security",
+            "aggregator": "aggregator",
+            "team_lead_deliver": "team_lead_deliver"
+        }
     )
 
     # Parallel execution paths with validation after each
@@ -183,4 +213,22 @@ def build_graph() -> Any:
     # Final delivery
     workflow.add_edge("team_lead_deliver", END)
 
-    return workflow.compile()
+    compiled = workflow.compile()
+
+    # Enforce inbox channels that support multiple concurrent updates (fan-in) on the compiled graph
+    compiled.channels["aggregator:inbox"] = FanInChannel(dict, lambda left, right: right)
+    compiled.channels["team_lead_deliver:inbox"] = FanInChannel(dict, lambda left, right: right)
+
+    # Wrap astream to default recursion_limit to 100, since our deep validation
+    # graph requires more than 25 steps to execute in a single pass.
+    original_astream = compiled.astream
+
+    def patched_astream(input, config=None, **kwargs):
+        if config is None:
+            config = {}
+        if "recursion_limit" not in config or config["recursion_limit"] < 100:
+            config["recursion_limit"] = 100
+        return original_astream(input, config=config, **kwargs)
+
+    object.__setattr__(compiled, "astream", patched_astream)
+    return compiled

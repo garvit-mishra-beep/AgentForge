@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,7 @@ const SETTINGS_SECTIONS = [
     description: "Configure your API endpoint and authentication",
     icon: Server,
     items: [
-      { label: "API URL", value: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1" },
+      { label: "API URL", value: process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api/v1" },
       { label: "API Key", value: "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" },
     ],
   },

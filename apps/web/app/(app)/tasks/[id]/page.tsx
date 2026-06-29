@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getExecution, getTask, getTaskMessages } from "@/lib/api";
 import type { Execution, Task, TaskMessage } from "@/lib/types";
+import { FormattedDate } from "@/components/ui/formatted-date";
+
 import type { AgentRole } from "@/lib/constants";
 import { AGENT_CONFIG } from "@/lib/constants";
 import { ExecutionGraph } from "@/components/task/execution-graph";
@@ -70,7 +72,7 @@ function MessageCard({ msg }: { msg: TaskMessage }) {
           <Badge variant={config.badgeVariant}>{config.label}</Badge>
           <code className="text-[10px] text-muted-foreground font-mono truncate max-w-[140px]">{msg.model}</code>
           <span className="text-[10px] text-muted-foreground">
-            {msg.created_at ? new Date(msg.created_at).toLocaleTimeString() : ""}
+            {msg.created_at ? <FormattedDate date={msg.created_at} type="time" /> : ""}
           </span>
         </div>
         <div className={cn(

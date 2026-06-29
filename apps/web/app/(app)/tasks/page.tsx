@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState, type FormEvent } from "react";
+import { Suspense, useEffect, useState, useCallback, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -228,7 +228,7 @@ function TasksPageInner() {
   const [filterTeam, setFilterTeam] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [t, tms] = await Promise.all([listTasks(), listTeams()]);
@@ -237,9 +237,9 @@ function TasksPageInner() {
     } catch {
       toast("Failed to load data", { type: "error", description: "Check API connection." });
     } finally { setLoading(false); }
-  }
+  }, [toast]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const filteredTasks = tasks.filter((task) => {
     if (filterStatus !== "all" && task.status !== filterStatus) return false;

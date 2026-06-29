@@ -1,4 +1,4 @@
-﻿"""JWT authentication and authorization middleware with refresh token support."""
+"""JWT authentication and authorization middleware with refresh token support."""
 
 import logging
 import uuid
@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 import bcrypt
 import jwt
-from fastapi import HTTPException, Request
+from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
 from core.config import settings
@@ -17,11 +17,38 @@ AUTH_COOKIE_NAME = "agentforge_token"
 REFRESH_COOKIE_NAME = "agentforge_refresh"
 DEMO_USER_ID = "00000000-0000-0000-0000-000000000001"
 
+def set_auth_cookies(response: Response, token: str, refresh_token: str) -> None:
+    response.set_cookie(
+        key=AUTH_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        max_age=settings.jwt_expire_minutes * 60,
+        path="/",
+    )
+    response.set_cookie(
+        key=REFRESH_COOKIE_NAME,
+        value=refresh_token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        max_age=settings.jwt_refresh_expire_days * 24 * 3600,
+        path="/",
+    )
+
+def clear_auth_cookies(response: Response) -> None:
+    response.delete_cookie(key=AUTH_COOKIE_NAME, path="/")
+    response.delete_cookie(key=REFRESH_COOKIE_NAME, path="/")
+
+
 _OPEN_ROUTES = {
     "GET:/api/v1/health",
     "POST:/api/v1/auth/login",
     "POST:/api/v1/auth/register",
     "POST:/api/v1/auth/refresh",
+    "GET:/api/v1/auth/google",
+    "GET:/api/v1/auth/google/callback",
     "GET:/api/v1/keys/providers",
     "POST:/api/v1/keys/validate",
     # GitHub webhooks authenticate via HMAC signature, not a user JWT.
@@ -217,6 +244,8 @@ async def validate_websocket_token(token: str) -> str | None:
 async def auth_middleware(request: Request, call_next):
     path = request.url.path
     method = request.method
+    if method == "OPTIONS":
+        return await call_next(request)
     route_key = f"{method}:{path}"
 
     for prefix in ("/api/v1/", "/docs", "/openapi.json", "/redoc"):
@@ -230,6 +259,32 @@ async def auth_middleware(request: Request, call_next):
     ):
         return await call_next(request)
 
+    # CSRF Protection: check Origin/Referer on state-changing requests if using cookie auth
+    if method in ("POST", "PUT", "DELETE", "PATCH") and settings.auth_enabled:
+        has_cookie = bool(request.cookies.get(AUTH_COOKIE_NAME))
+        if has_cookie and not request.headers.get("Authorization"):
+            origin = request.headers.get("Origin") or request.headers.get("Referer")
+            if not origin:
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "CSRF: Origin or Referer header missing"},
+                )
+            
+            allowed = list(settings.cors_origins)
+            if settings.frontend_url:
+                allowed.append(settings.frontend_url)
+            # Add host origin
+            host_origin = f"{request.url.scheme}://{request.url.netloc}"
+            allowed.append(host_origin)
+            
+            # Ensure it starts with one of the allowed origins
+            if not any(origin.startswith(a.rstrip("/")) for a in allowed):
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "CSRF: Origin or Referer not allowed"},
+                )
+
+
     user_id = await get_current_user(request)
     if user_id is None and settings.auth_enabled:
         return JSONResponse(
@@ -239,3 +294,4 @@ async def auth_middleware(request: Request, call_next):
 
     request.state.user_id = user_id or DEMO_USER_ID
     return await call_next(request)
+

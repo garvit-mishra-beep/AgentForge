@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/components/auth/auth-context";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -18,6 +19,8 @@ import {
   Play,
   Zap,
   TrendingUp,
+  LogOut,
+
   type LucideIcon,
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -42,6 +45,8 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, logout } = useAuth();
+
 
   useEffect(() => {
     const saved = localStorage.getItem("agentforge_sidebar_collapsed");
@@ -115,6 +120,28 @@ export default function Sidebar() {
                 );
               })}
             </nav>
+            {user && (
+              <div className="border-t border-sidebar-border p-2 mt-auto">
+                <div className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-sidebar-hover/30 transition-colors">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold font-mono">
+                      {user.name.slice(0, 1).toUpperCase()}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-medium truncate text-foreground leading-none mb-0.5">{user.name}</span>
+                      <span className="text-[10px] text-muted-foreground truncate leading-none">{user.email}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={logout}
+                    title="Log Out"
+                    className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer p-1"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
           </motion.aside>
         )}
       </AnimatePresence>
@@ -188,6 +215,45 @@ export default function Sidebar() {
           })}
         </nav>
 
+        {user && (
+          <div className="border-t border-sidebar-border p-2 space-y-1">
+            {collapsed ? (
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={logout}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive transition-all cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={8}>
+                  Log Out ({user.name})
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <div className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-sidebar-hover/30 transition-colors">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold font-mono">
+                    {user.name.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-medium truncate text-foreground leading-none mb-0.5">{user.name}</span>
+                    <span className="text-[10px] text-muted-foreground truncate leading-none">{user.email}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={logout}
+                  title="Log Out"
+                  className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer p-1"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="border-t border-sidebar-border p-2">
           <button
             onClick={handleToggleCollapse}
@@ -203,3 +269,4 @@ export default function Sidebar() {
     </TooltipProvider>
   );
 }
+

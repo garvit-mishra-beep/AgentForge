@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,8 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { FormattedDate } from "@/components/ui/formatted-date";
+
 
 export default function ExecutionsPage() {
   const [executions, setExecutions] = useState<Execution[]>([]);
@@ -107,7 +109,7 @@ export default function ExecutionsPage() {
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span className="font-mono">Node: {exec.current_node ?? "â€”"}</span>
                         {exec.started_at && (
-                          <span>{new Date(exec.started_at).toLocaleDateString()}</span>
+                          <FormattedDate date={exec.started_at} type="date" />
                         )}
                       </div>
                     </div>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ const FEATURES = [
 
 const PRICING = [
   {
-    name: "Starter", price: "Free", tasks: "10 tasks/mo", agents: "2 agents", support: "Community", byok: false, sso: false, featured: false,
+    name: "Starter", price: "Free", tasks: "10 tasks/mo", agents: "2 agents", support: "Community", byok: true, sso: false, featured: false,
   },
   {
     name: "Pro", price: "$29/mo", tasks: "Unlimited", agents: "All 6", support: "Priority", byok: true, sso: false, featured: true,

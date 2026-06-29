@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 
 sys.modules["langchain"] = None  # type: ignore
 
@@ -86,6 +86,8 @@ _GLOBAL_RL_PREFIX = "global_ratelimit:"
 async def rate_limit_middleware(request, call_next):
     path = request.url.path
     method = request.method
+    if method == "OPTIONS":
+        return await call_next(request)
     route_key = f"{method}:{path}"
 
     if route_key in _SKIP_RATE_LIMIT_ROUTES:
@@ -208,3 +210,6 @@ app.include_router(github_router, prefix="/api/v1")
 @app.get("/api/v1/metrics")
 async def metrics():
     return _prometheus_metrics()
+
+# Trigger hot-reload to load updated Google OAuth credentials from .env
+

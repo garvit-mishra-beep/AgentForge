@@ -1,9 +1,7 @@
-﻿"use client";
-
+"use client";
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { useAnimation } from "framer-motion";
-import { loginUser, registerUser } from "@/lib/api";
-import type { AuthResponse } from "@/lib/types";
+import { loginUser, registerUser, logoutUser, getMe } from "@/lib/api";
 
 interface AuthContextType {
   user: { id: string; email: string; name: string } | null;
@@ -18,37 +16,54 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<{ id: string; email: string; name: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const shakeAnimation = useAnimation();
 
+  // Backward compatible token state
+  const token = user ? "session_active" : null;
+
   useEffect(() => {
-    const savedToken = localStorage.getItem("agentforge_token");
-    const savedUser = localStorage.getItem("agentforge_user");
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+    async function initAuth() {
+      try {
+        const u = await getMe();
+        setUser(u);
+        localStorage.setItem("agentforge_user", JSON.stringify(u));
+      } catch {
+        // Try refreshing cookies session
+        const { refreshAccessToken } = await import("@/lib/api");
+        const ok = await refreshAccessToken();
+        if (ok) {
+          try {
+            const u = await getMe();
+            setUser(u);
+            localStorage.setItem("agentforge_user", JSON.stringify(u));
+          } catch {
+            setUser(null);
+            localStorage.removeItem("agentforge_user");
+          }
+        } else {
+          setUser(null);
+          localStorage.removeItem("agentforge_user");
+        }
+      } finally {
+        setLoading(false);
+      }
     }
-    setLoading(false);
+    initAuth();
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      const res: AuthResponse = await loginUser(email, password);
-      localStorage.setItem("agentforge_token", res.token);
-      localStorage.setItem("agentforge_refresh", res.refresh_token);
+      const res = await loginUser(email, password);
       localStorage.setItem(
         "agentforge_user",
         JSON.stringify({ id: res.user_id, email: res.email, name: res.name })
       );
-      setToken(res.token);
       setUser({ id: res.user_id, email: res.email, name: res.name });
     } catch (err) {
-      // Trigger shake animation on failed login
       shakeAnimation.start({ x: [-10, 10, -10, 10, 0] }, {
-        duration: 0.5,
-        type: "spring"
+        duration: 0.5
       });
       throw err;
     }
@@ -56,31 +71,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = useCallback(async (name: string, email: string, password: string) => {
     try {
-      const res: AuthResponse = await registerUser(name, email, password);
-      localStorage.setItem("agentforge_token", res.token);
-      localStorage.setItem("agentforge_refresh", res.refresh_token);
+      const res = await registerUser(name, email, password);
       localStorage.setItem(
         "agentforge_user",
         JSON.stringify({ id: res.user_id, email: res.email, name: res.name })
       );
-      setToken(res.token);
       setUser({ id: res.user_id, email: res.email, name: res.name });
     } catch (err) {
-      // Trigger shake animation on failed registration
       shakeAnimation.start({ x: [-10, 10, -10, 10, 0] }, {
-        duration: 0.5,
-        type: "spring"
+        duration: 0.5
       });
       throw err;
     }
   }, [shakeAnimation]);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("agentforge_token");
-    localStorage.removeItem("agentforge_refresh");
-    localStorage.removeItem("agentforge_user");
-    setToken(null);
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await logoutUser();
+    } catch (err) {
+      console.error("Logout API call failed", err);
+    } finally {
+      localStorage.removeItem("agentforge_user");
+      setUser(null);
+    }
   }, []);
 
   return (

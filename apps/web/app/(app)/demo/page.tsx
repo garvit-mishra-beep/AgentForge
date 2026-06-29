@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,9 @@ import { ExecutionGraph } from "@/components/task/execution-graph";
 import { MetricCard } from "@/components/ui/metric-card";
 import { AGENT_CONFIG, type AgentRole } from "@/lib/constants";
 import { DEMO_SCENARIOS, type DemoScenario } from "@/lib/demo-data";
+import { FormattedDate } from "@/components/ui/formatted-date";
 import type { TaskMessage } from "@/lib/types";
+
 import {
   CheckCircle2, Loader2, Play, Pause, SkipForward,
   Sparkles, ArrowRight, Clock, Zap,
@@ -86,7 +88,7 @@ function DemoMessageCard({ msg, index, scenario }: { msg: TaskMessage; index: nu
             <Badge variant={config.badgeVariant}>{config.label}</Badge>
             <code className="text-[10px] text-muted-foreground font-mono truncate max-w-[140px]">{msg.model}</code>
             <span className="text-[10px] text-muted-foreground">
-              {new Date(msg.created_at).toLocaleTimeString()}
+              <FormattedDate date={msg.created_at} type="time" />
             </span>
             <span className="text-[9px] font-mono text-muted-foreground/60">{tokenCount} tok</span>
           </div>

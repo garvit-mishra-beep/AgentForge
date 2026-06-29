@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +30,7 @@ export default function TeamsPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<TeamTemplate | null>(null);
   const [templateBusy, setTemplateBusy] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       setTeams(await listTeams());
@@ -38,7 +38,7 @@ export default function TeamsPage() {
       toast("Failed to load teams", { type: "error", description: "Check that the API server is running." });
     }
     finally { setLoading(false); }
-  }
+  }, [toast]);
 
   async function handleDeleteTeam(id: string, name: string) {
     if (!confirm(`Are you sure you want to delete team "${name}"?`)) return;
@@ -51,7 +51,7 @@ export default function TeamsPage() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function handleCreate() {
     if (!name.trim()) return;

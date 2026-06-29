@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -44,7 +44,7 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
 
   const filteredModels = useMemo(() => buildModelsFromEnabledProviders(apiKeys), [apiKeys]);
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const [t, k] = await Promise.all([getTeam(id), listApiKeys().catch(() => [] as ApiKey[])]);
       setTeam(t);
@@ -53,12 +53,11 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
       toast("Failed to load team", { type: "error" });
     }
     finally { setLoading(false); }
-  }
+  }, [id, toast]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [load]);
 
   useEffect(() => {
     if (team) {

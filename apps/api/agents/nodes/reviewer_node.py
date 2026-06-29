@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 from typing import Any
 
 from agents.sanitize import wrap_context, wrap_task
@@ -79,7 +79,7 @@ async def reviewer_node(state: AgentState) -> dict[str, Any]:
     else:
         review = result.content
 
-    attempts = state.get("review_attempts", 0)
+    attempts = state.get("review_attempts") or 0
 
     logger.info("Reviewer complete")
     return {

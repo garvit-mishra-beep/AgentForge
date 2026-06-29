@@ -1,20 +1,10 @@
-﻿import type { Execution, Project, Task, TaskMessage, Team, Template, TeamTemplatePayload, ApiKey, ApiKeyCreatePayload, ApiKeyUpdatePayload, ApiKeyValidatePayload, ApiKeyValidateResponse, ProviderInfoResponse, ReviewResult, ProjectFile, AuthResponse } from "./types";
+import type { Execution, Project, Task, TaskMessage, Team, Template, TeamTemplatePayload, ApiKey, ApiKeyCreatePayload, ApiKeyUpdatePayload, ApiKeyValidatePayload, ApiKeyValidateResponse, ProviderInfoResponse, ReviewResult, ProjectFile, AuthResponse } from "./types";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api/v1";
 
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("agentforge_token");
-}
+let refreshLock: Promise<boolean> | null = null;
 
-function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("agentforge_refresh");
-}
-
-let refreshLock: Promise<string | null> | null = null;
-
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<boolean> {
   if (refreshLock) return refreshLock;
   refreshLock = _doRefresh();
   try {
@@ -24,28 +14,39 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
-async function _doRefresh(): Promise<string | null> {
-  const refresh = getRefreshToken();
-  if (!refresh) return null;
+async function _doRefresh(): Promise<boolean> {
   try {
+    const refreshToken = typeof window !== "undefined" ? localStorage.getItem("agentforge_refresh_token") : null;
+    const body = refreshToken ? JSON.stringify({ refresh_token: refreshToken }) : undefined;
     const res = await fetch(`${BASE}/auth/refresh`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: refresh }),
+      body,
     });
     if (!res.ok) {
-      localStorage.removeItem("agentforge_token");
-      localStorage.removeItem("agentforge_refresh");
-      localStorage.removeItem("agentforge_user");
-      if (typeof window !== "undefined") window.location.href = "/login";
-      return null;
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("agentforge_user");
+        localStorage.removeItem("agentforge_token");
+        localStorage.removeItem("agentforge_refresh_token");
+        if (window.location.pathname !== "/login" && window.location.pathname !== "/register") {
+          window.location.href = "/login";
+        }
+      }
+      return false;
     }
     const data = await res.json();
-    localStorage.setItem("agentforge_token", data.token);
-    localStorage.setItem("agentforge_refresh", data.refresh_token);
-    return data.token;
+    if (typeof window !== "undefined") {
+      if (data.token) {
+        localStorage.setItem("agentforge_token", data.token);
+      }
+      if (data.refresh_token) {
+        localStorage.setItem("agentforge_refresh_token", data.refresh_token);
+      }
+    }
+    return true;
   } catch {
-    return null;
+    return false;
   }
 }
 
@@ -53,31 +54,35 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
 
+  const token = typeof window !== "undefined" ? localStorage.getItem("agentforge_token") : null;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
     ...(typeof crypto !== "undefined" ? { "X-Request-ID": crypto.randomUUID() } : {}),
   };
-
-  const token = getToken();
-  if (token && !path.startsWith("/auth/")) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
 
   try {
     let res = await fetch(`${BASE}${path}`, {
       ...init,
+      credentials: "include",
       signal: controller.signal,
       headers: { ...headers, ...(init?.headers as Record<string, string>) },
     });
 
     if (res.status === 401 && !path.startsWith("/auth/")) {
-      const newToken = await refreshAccessToken();
-      if (newToken) {
-        headers["Authorization"] = `Bearer ${newToken}`;
+      const ok = await refreshAccessToken();
+      if (ok) {
+        const newToken = typeof window !== "undefined" ? localStorage.getItem("agentforge_token") : null;
+        const newHeaders = {
+          ...headers,
+          ...(newToken ? { "Authorization": `Bearer ${newToken}` } : {}),
+          ...(init?.headers as Record<string, string>),
+        };
         res = await fetch(`${BASE}${path}`, {
           ...init,
+          credentials: "include",
           signal: controller.signal,
-          headers: { ...headers, ...(init?.headers as Record<string, string>) },
+          headers: newHeaders,
         });
       }
     }
@@ -87,11 +92,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       throw new Error(body.detail ?? `Request failed: ${res.status}`);
     }
     if (res.status === 204) return undefined as T;
-    return res.json() as Promise<T>;
+    const data = await res.json();
+    if (typeof window !== "undefined" && (path === "/auth/login" || path === "/auth/register")) {
+      if (data.token) {
+        localStorage.setItem("agentforge_token", data.token);
+      }
+      if (data.refresh_token) {
+        localStorage.setItem("agentforge_refresh_token", data.refresh_token);
+      }
+    }
+    return data as T;
   } finally {
     clearTimeout(timeout);
   }
 }
+
 
 export const api = {
   get<T>(path: string): Promise<T> {
@@ -221,14 +236,11 @@ export async function uploadFile(projectId: string, file: File, parentId?: strin
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60000);
   try {
-    const token = getToken();
-    const headers: Record<string, string> = {};
-    if (token) headers["Authorization"] = `Bearer ${token}`;
     const res = await fetch(`${BASE}/projects/${projectId}/upload`, {
       method: "POST",
       body: formData,
+      credentials: "include",
       signal: controller.signal,
-      headers,
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({ detail: res.statusText }));
@@ -247,14 +259,11 @@ export async function uploadZip(projectId: string, file: File): Promise<{ status
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 120000);
   try {
-    const token = getToken();
-    const headers: Record<string, string> = {};
-    if (token) headers["Authorization"] = `Bearer ${token}`;
     const res = await fetch(`${BASE}/projects/${projectId}/upload/zip`, {
       method: "POST",
       body: formData,
+      credentials: "include",
       signal: controller.signal,
-      headers,
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({ detail: res.statusText }));
@@ -485,6 +494,22 @@ export function loginUser(email: string, password: string): Promise<AuthResponse
 export function registerUser(name: string, email: string, password: string): Promise<AuthResponse> {
   return api.post("/auth/register", { name, email, password });
 }
+
+export function logoutUser(): Promise<void> {
+  const refreshToken = typeof window !== "undefined" ? localStorage.getItem("agentforge_refresh_token") : null;
+  const body = refreshToken ? { refresh_token: refreshToken } : {};
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("agentforge_token");
+    localStorage.removeItem("agentforge_refresh_token");
+    localStorage.removeItem("agentforge_user");
+  }
+  return api.post("/auth/logout", body);
+}
+
+export function getMe(): Promise<{ id: string; email: string; name: string }> {
+  return api.get("/auth/me");
+}
+
 
 export function getAnalyticsDashboard(): Promise<AnalyticsDashboard> {
   return api.get("/analytics/dashboard");

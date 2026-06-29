@@ -9,13 +9,13 @@ import { useAuth } from "@/components/auth/auth-context";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { token, loading } = useAuth();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading && !token) {
+    if (!loading && !user) {
       router.replace("/login");
     }
-  }, [token, loading, router]);
+  }, [user, loading, router]);
 
   if (loading) {
     return (
@@ -25,7 +25,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!token) {
+  if (!user) {
     return null;
   }
 

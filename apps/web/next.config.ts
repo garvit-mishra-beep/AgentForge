@@ -1,4 +1,4 @@
-﻿import type { NextConfig } from "next";
+import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' http://localhost:8000 ws://localhost:8000",
+              "connect-src 'self' http://localhost:8000 ws://localhost:8000 http://127.0.0.1:8000 ws://127.0.0.1:8000",
               "frame-ancestors 'none'",
             ].join("; "),
           },

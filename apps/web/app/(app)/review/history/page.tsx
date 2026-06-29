@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { ReviewRecord } from "@/lib/types";
+import { FormattedDate } from "@/components/ui/formatted-date";
+
 
 const STORAGE_KEY = "agentforge-review-history";
 
@@ -173,7 +175,7 @@ export default function ReviewHistoryPage() {
                       {record.issues} issue{record.issues !== 1 ? "s" : ""}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
-                      {new Date(record.timestamp).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      <FormattedDate date={record.timestamp} type="datetime" options={{ month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }} />
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground line-clamp-2">{record.summary}</p>

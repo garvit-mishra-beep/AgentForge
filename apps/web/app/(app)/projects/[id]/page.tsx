@@ -11,6 +11,8 @@ import { MemoryViewer } from "@/components/task/memory-viewer";
 import type { Project, Task, Team, Execution, ProjectFile } from "@/lib/types";
 import { Loader2, ArrowLeft, FolderOpen, Plus, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { FormattedDate } from "@/components/ui/formatted-date";
+
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -21,7 +23,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [executions, setExecutions] = useState<Execution[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const [p, t, tm, f, e] = await Promise.all([
         getProject(id).catch(() => null),
@@ -37,9 +39,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       setExecutions(e);
     } catch { /* ignore */ }
     finally { setLoading(false); }
-  }
+  }, [id]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   const handleFilesChange = useCallback(() => {
     listProjectFiles(id).then(setFiles).catch(() => {});
@@ -188,7 +190,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium">Execution {exec.id.slice(0, 8)}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {exec.started_at ? new Date(exec.started_at).toLocaleString() : ""}
+                        {exec.started_at ? <FormattedDate date={exec.started_at} type="datetime" /> : ""}
                       </p>
                     </div>
                     <Badge variant={exec.status === "completed" ? "success" : exec.status === "failed" ? "destructive" : "warning"}>

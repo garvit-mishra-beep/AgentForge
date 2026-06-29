@@ -1,4 +1,4 @@
-"""JWT authentication and authorization middleware with refresh token support."""
+﻿"""JWT authentication and authorization middleware with refresh token support."""
 
 import logging
 import uuid
@@ -130,7 +130,7 @@ def verify_refresh_token(token: str) -> str | None:
     return payload["sub"] if payload else None
 
 
-# ── Refresh-token persistence (rotation + revocation) ──────────────────────
+# â”€â”€ Refresh-token persistence (rotation + revocation) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 async def store_refresh_token(db, jti: str, user_id: str, expires_at: datetime) -> None:
@@ -192,6 +192,26 @@ async def require_user(request: Request) -> str:
     if user_id is None:
         raise HTTPException(status_code=401, detail="Authentication required")
     return user_id
+
+
+async def validate_websocket_token(token: str) -> str | None:
+    """Validate a JWT token for WebSocket connections.
+    Returns user_id if valid, None otherwise.
+    """
+    try:
+        payload = jwt.decode(
+            token,
+            _get_jwt_secret(),
+            algorithms=["HS256"],
+            options={"require": ["sub", "exp", "type"]},
+        )
+        if payload.get("type") != "access":
+            return None
+        return payload["sub"]
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
 
 
 async def auth_middleware(request: Request, call_next):

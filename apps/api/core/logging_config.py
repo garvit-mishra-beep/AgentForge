@@ -1,4 +1,4 @@
-"""Structured logging configuration with JSON and text formatters."""
+﻿"""Structured logging configuration with JSON and text formatters."""
 
 import json
 import logging

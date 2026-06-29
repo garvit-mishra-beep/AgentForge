@@ -1,4 +1,4 @@
-"""``agentforge`` CLI entry point."""
+﻿"""``agentforge`` CLI entry point."""
 
 from __future__ import annotations
 
@@ -22,14 +22,14 @@ def _print_issues(result: dict) -> int:
         return 1
 
     if not issues:
-        print("✓ No issues found.")
+        print("âœ“ No issues found.")
         return 0
 
     issues = sorted(issues, key=lambda i: _SEV_ORDER.get(str(i.get("severity", "")).lower(), 5))
     blocking = 0
     for i in issues:
         sev = str(i.get("severity", "info")).lower()
-        marker = "✗" if sev in ("critical", "high", "major") else "•"
+        marker = "âœ—" if sev in ("critical", "high", "major") else "â€¢"
         if sev in ("critical", "high", "major"):
             blocking += 1
         line = f" (line {i['line']})" if i.get("line") else ""

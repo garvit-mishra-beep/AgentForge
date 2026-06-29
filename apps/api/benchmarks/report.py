@@ -1,7 +1,7 @@
-"""Render benchmark results as Markdown.
+﻿"""Render benchmark results as Markdown.
 
 Every number here is computed by :mod:`benchmarks.runner` from the labeled
-dataset — there are no hardcoded claims.
+dataset â€” there are no hardcoded claims.
 """
 
 from __future__ import annotations

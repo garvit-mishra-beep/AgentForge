@@ -1,4 +1,4 @@
-"""Repository Context API routes."""
+﻿"""Repository Context API routes."""
 
 import json
 import uuid
@@ -35,7 +35,7 @@ async def _ensure_file_exists(db, project_id: str, file_id: str, user_id: str):
         raise HTTPException(status_code=404, detail="File not found")
 
 
-# ── Parse & Store ────────────────────────────────────────────────────────
+# â”€â”€ Parse & Store â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @router.post("/parse/{file_id}", status_code=201)
@@ -218,7 +218,7 @@ async def parse_all_files(
     return {"total": len(results), "results": results}
 
 
-# ── Query ────────────────────────────────────────────────────────────────
+# â”€â”€ Query â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @router.get("/summary")

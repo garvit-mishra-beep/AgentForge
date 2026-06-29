@@ -28,26 +28,33 @@ class TaskTracker:
     async def shutdown(self, timeout: float = 30.0) -> None:
         self._shutdown_event.set()
         if not self._tasks:
-            logger.info("No background tasks to cancel")
+            logger.info("No background tasks to shutdown")
             return
 
-        logger.info("Cancelling %d background tasks...", len(self._tasks))
-        for task in list(self._tasks):
-            task.cancel()
-
+        logger.info("Waiting for %d background tasks to complete...", len(self._tasks))
+        # Wait for tasks to complete naturally first (grace period: timeout * 0.8)
         done, pending = await asyncio.wait(
             self._tasks,
-            timeout=timeout,
+            timeout=timeout * 0.8,
             return_when=asyncio.ALL_COMPLETED,
         )
 
         if pending:
             logger.warning(
-                "%d tasks did not complete within %ss",
-                len(pending), timeout,
+                "Cancelling %d tasks that did not complete within grace period...",
+                len(pending),
+            )
+            for task in pending:
+                task.cancel()
+
+            # Wait for cancellation to propagate (timeout * 0.2)
+            await asyncio.wait(
+                pending,
+                timeout=timeout * 0.2,
+                return_when=asyncio.ALL_COMPLETED,
             )
         else:
-            logger.info("All background tasks completed")
+            logger.info("All background tasks completed gracefully")
 
         self._tasks.clear()
 

@@ -1,4 +1,4 @@
-"""Tests for API key management endpoints."""
+﻿"""Tests for API key management endpoints."""
 
 import pytest
 
@@ -170,6 +170,3 @@ async def test_api_key_preview_masked(client):
     data = response.json()
     assert "****" in data["key_preview"]
     assert "abcdefghijklmnopqrstuvwxyz" not in data["key_preview"]
-
-
-

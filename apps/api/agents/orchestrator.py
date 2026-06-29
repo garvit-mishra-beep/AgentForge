@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from datetime import UTC, datetime
@@ -5,6 +6,7 @@ from typing import Any
 
 from agents.graph import build_graph
 from app.memory_service import get_relevant_memories, store_memory
+from app.routes.tasks import ws_manager
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -80,13 +82,15 @@ async def run_task(db, task_id: str) -> None:
             "UPDATE tasks SET status = 'running', updated_at = NOW() WHERE id = $1",
             task_id,
         )
+        # Notify WebSocket clients of task status change to running
+        await ws_manager.task_status_update(task_id, "running", None)
 
         exec_id = await db.fetchval(
             "INSERT INTO executions (task_id) VALUES ($1) RETURNING id",
             task_id,
         )
 
-        # ── Gather context and memories ──────────────────────────────────
+        # â”€â”€ Gather context and memories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         repository_context = ""
         relevant_memories = []
         learned_signal = ""
@@ -116,7 +120,7 @@ async def run_task(db, task_id: str) -> None:
             except Exception as e:
                 logger.warning("Failed to fetch learned signal: %s", e)
 
-        # ── Build initial state ──────────────────────────────────────────
+        # â”€â”€ Build initial state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         initial_state = {
             "task": {
                 "id": task_row["id"],
@@ -154,7 +158,7 @@ async def run_task(db, task_id: str) -> None:
 
         graph = build_graph()
 
-        # ── Stream graph ────────────────────────────────────────────────
+        # â”€â”€ Stream graph â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         step_order = 0
         final_state = dict(initial_state)
 
@@ -177,6 +181,22 @@ async def run_task(db, task_id: str) -> None:
                             msg["message_type"], msg["content"],
                             json.dumps(msg.get("metadata", {})),
                         )
+                        # Send WebSocket notification for agent message
+                        await ws_manager.agent_message(
+                            task_id,
+                            msg["content"],
+                            msg["role"],
+                            msg["model"],
+                            len(msg.get("content", ""))  # Using length as a simple chunk index approximation
+                        )
+
+                        # Also send as execution log if it's a significant message
+                        if msg["message_type"] in ["plan", "code", "review", "delivery"]:
+                            await ws_manager.execution_log(
+                                task_id,
+                                msg["role"],  # node
+                                msg["content"]  # data
+                            )
 
                 await db.execute(
                     """
@@ -188,11 +208,11 @@ async def run_task(db, task_id: str) -> None:
                     node_name, exec_id,
                 )
 
-        # ── Store execution results as memories ──────────────────────────
+        # â”€â”€ Store execution results as memories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if user_id:
             await _store_execution_memories(db, task_row, final_state, user_id, project_id)
 
-        # ── Mark complete ────────────────────────────────────────────────
+        # â”€â”€ Mark complete â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         await db.execute(
             "UPDATE tasks SET status = 'completed', completed_at = $1, updated_at = NOW() WHERE id = $2",
             _utcnow(), task_id,
@@ -202,6 +222,9 @@ async def run_task(db, task_id: str) -> None:
             _utcnow(), exec_id,
         )
 
+        # Notify WebSocket clients of task completion
+        await ws_manager.task_status_update(task_id, "completed", None)
+
         logger.info("Task %s completed successfully", task_id)
 
     except TimeoutError:
@@ -210,6 +233,25 @@ async def run_task(db, task_id: str) -> None:
             "UPDATE tasks SET status = 'failed', error_message = 'Execution timed out', updated_at = NOW() WHERE id = $1",
             task_id,
         )
+        await db.execute(
+            "UPDATE executions SET status = 'failed', error_message = $1, completed_at = NOW() WHERE task_id = $2",
+            str(settings.max_execution_time), task_id,
+        )
+        # Notify WebSocket clients of task timeout
+        await ws_manager.task_status_update(task_id, "failed", "timeout")
+    except asyncio.CancelledError:
+        logger.warning("Task %s cancelled during shutdown", task_id)
+        await db.execute(
+            "UPDATE tasks SET status = 'failed', error_message = 'Task cancelled on server shutdown', updated_at = NOW() WHERE id = $1",
+            task_id,
+        )
+        if 'exec_id' in locals():
+            await db.execute(
+                "UPDATE executions SET status = 'failed', error_message = 'Cancelled on shutdown', completed_at = NOW() WHERE id = $1",
+                exec_id,
+            )
+        await ws_manager.task_status_update(task_id, "failed", "cancelled")
+        raise
     except Exception as e:
         logger.exception("Task %s failed", task_id)
         await db.execute(
@@ -220,6 +262,8 @@ async def run_task(db, task_id: str) -> None:
             "UPDATE executions SET status = 'failed', error_message = $1, completed_at = NOW() WHERE task_id = $2",
             str(e), task_id,
         )
+        # Notify WebSocket clients of task failure
+        await ws_manager.task_status_update(task_id, "failed", str(e))
 
 
 async def _store_execution_memories(db, task_row, final_state: dict, user_id: str, project_id: str | None):

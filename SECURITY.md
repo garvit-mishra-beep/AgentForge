@@ -1,74 +1,27 @@
-# Security Guide — AgentForge
+# Security Policy
 
-Specifications for authentication flows, role access controls, BYOK provider key encryption, rate limiting, and prompt injection defenses.
+## Supported Versions
 
----
+The following versions of AgentForge receive security updates:
 
-## 1. Authentication Flow
+| Version | Supported |
+| :--- | :---: |
+| V1.0.x (Current) |  Yes |
+| < V1.0.0 |  No |
 
-AgentForge uses a local, secure authentication system utilizing bcrypt for password hashing and standard PyJWT JSON Web Tokens (JWT) for session management.
+## Reporting a Vulnerability
 
-```text
-Browser                                       FastAPI Backend
-   │                                                 │
-   │  1. Submit Username/Password                    │
-   ├────────────────────────────────────────────────►│ (Verifies bcrypt hash)
-   │                                                 │
-   │  2. Return JWT Access + Refresh Tokens          │
-   │◄────────────────────────────────────────────────┤
-   │                                                 │
-   │  3. Subsequent Requests + Bearer JWT Header     │
-   ├────────────────────────────────────────────────►│ (Middleware validates JWT)
-   │                                                 │
-```
+We take the security of AgentForge seriously. If you believe you have found a security vulnerability in this project, please **do not** open a public GitHub issue. Doing so risks exposing the vulnerability before a patch is available.
 
-### JWT Validation Middleware
-The authorization middleware (`app/auth.py`) intercepts incoming HTTP calls:
-1. Validates the signature using the configured `JWT_SECRET`.
-2. Checks expiration times.
-3. Decodes user, role, and tenant isolation variables.
-4. Checks Redis cache validation status.
+Instead, please send a detailed report to our security team at **security@agentforge.dev**.
 
----
+### What to Include in Your Report
+To help us triage and patch the vulnerability quickly, please include:
+- A description of the issue and its potential impact.
+- Step-by-step instructions (or a proof-of-concept script) to reproduce the vulnerability.
+- Any relevant details about your environment (OS, python version, node version, deployment configuration).
 
-## 2. AI Provider Key (BYOK) Encryption
-
-AgentForge dynamically maps keys at execution time from three layers (Project, User, Global).
-
-### Encryption at Rest
-All API keys are encrypted at rest using AES-256 Fernet symmetric cryptography:
-* **Key Generation:** A secure encryption key (`ENCRYPTION_KEY`) is stored in backend environment variables.
-* **Storage:** Keys are encrypted before being written to PostgreSQL database fields (`api_keys`).
-
-### Key Lifecycle
-1. **Decryption:** Decrypted in memory *only* during active task execution by the agent nodes.
-2. **Post-Execution:** Reference values are deleted immediately after the network call completes to ensure keys are garbage collected.
-3. **Logs:** Plaintext keys are never output to log trace dumps or returned in public API payloads.
-
----
-
-## 3. Rate Limiting
-
-Rate limiting is enforced at the API routing layer using a Redis token bucket store:
-* Limits are configured per IP address and user account identifier.
-* Defaults are set to prevent API denial-of-service bursts:
-  ```python
-  # Settings: settings.review_rate_limit / settings.review_rate_window
-  ```
-* Requests hitting the limit return `429 Too Many Requests`.
-
----
-
-## 4. Prompt Injection & PII Redaction
-
-### Input Sanitization
-User-provided prompts and code inputs are sanitized to strip system-role overrides:
-* **Role stripping:** Block text sequences like `ignore previous instructions` or `forget all prior instructions`.
-* **PII Redaction:** Regular expression matching filters out sensitive elements (SSNs, credit cards, emails, phone numbers) before prompts are fed to LLM API clients.
-
----
-
-## 5. Vulnerability Reporting
-
-If you find a security bug in AgentForge, please do not open a public issue. Email: **security@agentforge.dev**
-We target a 72-hour triage window and coordinate disclosures following patch releases.
+### Our Response Process
+- **Triage**: We aim to acknowledge receipt of your report within 48 hours and provide a preliminary triage status within 72 hours.
+- **Remediation**: Once verified, we will work on a fix. Security patches are typically released as incremental point releases.
+- **Coordination**: We coordinate disclosures with finders, acknowledging their contribution in the security release notes unless they request anonymity.

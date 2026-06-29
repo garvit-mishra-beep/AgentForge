@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+@theme {
+  /* Surfaces */
+  --bg:           #0a0a0a;   /* page background    */
+  --surface-1:    #111111;   /* cards, sidebar      */
+  --surface-2:    #1a1a1a;   /* inputs, hover       */
+  --border:       #222222;   /* default border      */
+  --border-faint: #181818;   /* subtle dividers     */
+
+  /* Brand */
+  --accent:       #6366f1;   /* indigo — primary    */
+  --accent-hi:    #818cf8;   /* indigo — hover      */
+  --violet:       #8b5cf6;   /* secondary accent    */
+
+  /* Semantic */
+  --live:         #22c55e;   /* active / success    */
+  --warn:         #f59e0b;   /* warning             */
+  --error:        #ef4444;   /* error / danger      */
+
+  /* Text */
+  --text-1:       #f0f0f0;   /* primary             */
+  --text-2:       #a0a0a0;   /* secondary / muted   */
+  --text-3:       #555555;   /* placeholder         */
+  --code-bg:      #0d1117;   /* code surfaces       */
+
+  /* Typography */
+  --font-sans:    'Inter', sans-serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Additional variables from current implementation that we'll keep */
+  --color-background: var(--bg);
+  --color-foreground: var(--text-1);
+  --color-surface: var(--surface-1);
+  --color-surface-hover: var(--surface-2);
+  --color-surface-active: #242424;
+  --color-card: var(--surface-1);
+  --color-card-foreground: var(--text-1);
+  --color-border: var(--border);
+  --color-border-hover: #374151;
+  --color-border-active: #4b5563;
+  --color-muted: #6b7280;
+  --color-muted-foreground: #9ca3af;
+  --color-primary: var(--accent);
+  --color-primary-foreground: #ffffff;
+  --color-primary-muted: var(--accent) / 0.12;
+  --color-secondary: #64748b;
+  --color-secondary-foreground: #e2e8f0;
+  --color-destructive: var(--error);
+  --color-destructive-foreground: #ffffff;
+  --color-destructive-muted: var(--error) / 0.12;
+
+  /* Agent role colors from current implementation */
+  --color-lead:         #6366f1;   /* indigo */
+  --color-lead-muted:   #6366f1 / 0.1;
+  --color-lead-surface: #6366f1 / 0.06;
+  --color-builder:      #60a5fa;   /* blue */
+  --color-builder-muted:#60a5fa / 0.1;
+  --color-builder-surface:#60a5fa / 0.06;
+  --color-reviewer:     #fbbf24;   /* amber */
+  --color-reviewer-muted:#fbbf24 / 0.1;
+  --color-reviewer-surface:#fbbf24 / 0.06;
+  --color-deliver:      #a78bfa;   /* violet */
+  --color-deliver-muted:#a78bfa / 0.1;
+  --color-deliver-surface:#a78bfa / 0.06;
+  --color-tester:       #34d399;   /* emerald */
+  --color-tester-muted: #34d399 / 0.1;
+  --color-tester-surface:#34d399 / 0.06;
+
+  --color-success: var(--live);
+  --color-warning: var(--warn);
+  --color-info:    #60a5fa; /* light blue */
+
+  /* Sidebar colors */
+  --color-sidebar:        #0f172a;
+  --color-sidebar-border: #1e293b;
+  --color-sidebar-hover:  #334155;
+  --color-sidebar-active: #475569;
+  --color-sidebar-foreground: #94a3b8;
+  --color-sidebar-foreground-hover: #f1f5f9;
+
+  --color-ring: var(--color-primary);
+  --radius-sm: 0.25rem;
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+
+  --animate-sidebar-collapse: sidebar-collapse 0.3s ease-out;
+  --animate-sidebar-expand: sidebar-expand 0.3s ease-out;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-hover);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .bg-grid {
+    background-image: linear-gradient(var(--color-border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .bg-grid-subtle {
+    background-image: linear-gradient(var(--color-border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 20%, transparent 70%);
+  }
+}

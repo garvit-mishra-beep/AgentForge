@@ -1,4 +1,4 @@
-"""End-to-end load test for Quick Review.
+﻿"""End-to-end load test for Quick Review.
 
 Usage:
     python -m pytest tests/test_review_load.py -v --no-header --tb=short

@@ -1,4 +1,4 @@
-import json
+﻿import json
 import logging
 
 from agents.sanitize import wrap_context, wrap_memories, wrap_task
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 async def team_lead_plan_node(state: AgentState) -> AgentState:
-    logger.info("Team Lead planning phase — task: %s", state["task"]["title"])
+    logger.info("Team Lead planning phase â€” task: %s", state["task"]["title"])
 
     # Get user and project context from state (with fallbacks)
     user_id = state.get("user_id", "00000000-0000-0000-0000-000000000001")

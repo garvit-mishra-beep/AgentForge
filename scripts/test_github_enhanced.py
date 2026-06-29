@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for the enhanced GitHub integration system.
 """
 import pytest

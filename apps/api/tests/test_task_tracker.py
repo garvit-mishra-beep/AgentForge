@@ -1,4 +1,4 @@
-"""Tests for TaskTracker background task management."""
+﻿"""Tests for TaskTracker background task management."""
 
 import asyncio
 

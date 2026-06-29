@@ -1,4 +1,4 @@
-"""Tests for health endpoint."""
+﻿"""Tests for health endpoint."""
 
 import pytest
 

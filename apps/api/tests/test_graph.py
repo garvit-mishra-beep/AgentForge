@@ -1,4 +1,4 @@
-"""Tests for the LangGraph agent graph with mocked AI providers."""
+﻿"""Tests for the LangGraph agent graph with mocked AI providers."""
 
 from unittest.mock import AsyncMock, patch
 

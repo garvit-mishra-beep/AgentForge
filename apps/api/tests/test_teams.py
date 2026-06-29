@@ -1,4 +1,4 @@
-"""Tests for teams CRUD endpoints."""
+﻿"""Tests for teams CRUD endpoints."""
 
 import pytest
 

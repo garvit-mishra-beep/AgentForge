@@ -1,4 +1,4 @@
-import json
+﻿import json
 import logging
 from typing import Any
 
@@ -82,7 +82,7 @@ async def tester_node(state: AgentState) -> dict[str, Any]:
 
     # Check if tester is configured
     if "tester" not in state["team_config"]:
-        logger.info("No tester configured — skipping")
+        logger.info("No tester configured â€” skipping")
         # Return a passing test result when no tester configured
         empty_result = ReviewOutput(
             verdict=Verdict.passed,

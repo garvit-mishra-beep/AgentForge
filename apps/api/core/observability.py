@@ -1,4 +1,4 @@
-"""Observability module with structured logging, metrics, and tracing support.
+﻿"""Observability module with structured logging, metrics, and tracing support.
 
 Emits named events with JSON payloads to the logger at INFO level.
 In production, these feed into log aggregation (Datadog, Grafana Loki, etc.).
@@ -13,29 +13,29 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# ── Structured Events ──────────────────────────────────────────────────
+# â”€â”€ Structured Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def emit(event: str, data: dict) -> None:
     """Log a structured event.
 
     Event names:
-        review_queued       — review submitted to queue
-        review_completed    — pipeline finished successfully
-        review_failed       — pipeline raised an exception
-        rate_limit_hit      — client was rate-limited (global or review)
-        queue_full          — review rejected because queue at capacity
-        auth_failed         — authentication failure
-        brute_force_lockout — login blocked by brute force protection
-        task_started        — agent task execution started
-        task_completed      — agent task execution completed
-        task_failed         — agent task execution failed
-        provider_error      — AI provider returned an error
+        review_queued       â€” review submitted to queue
+        review_completed    â€” pipeline finished successfully
+        review_failed       â€” pipeline raised an exception
+        rate_limit_hit      â€” client was rate-limited (global or review)
+        queue_full          â€” review rejected because queue at capacity
+        auth_failed         â€” authentication failure
+        brute_force_lockout â€” login blocked by brute force protection
+        task_started        â€” agent task execution started
+        task_completed      â€” agent task execution completed
+        task_failed         â€” agent task execution failed
+        provider_error      â€” AI provider returned an error
     """
     logger.info("EVENT %s %s", event, json.dumps(data, default=str))
 
 
-# ── Request Timing ─────────────────────────────────────────────────────
+# â”€â”€ Request Timing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @dataclass
@@ -90,7 +90,7 @@ def record_request_metric(method: str, path: str, status_code: int, duration_ms:
         _request_metrics.pop(0)
 
 
-# ── Health Metrics ─────────────────────────────────────────────────────
+# â”€â”€ Health Metrics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def get_health_metrics() -> dict[str, Any]:
@@ -111,7 +111,7 @@ def get_health_metrics() -> dict[str, Any]:
     }
 
 
-# ── Correlation ID ─────────────────────────────────────────────────────
+# â”€â”€ Correlation ID â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 import uuid
 

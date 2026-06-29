@@ -1,4 +1,4 @@
-"""
+﻿"""
 Enhanced GitHub Integration Core for AgentForge.
 Provides advanced GitHub workflow capabilities including repository synchronization
 and comprehensive multi-agent pull request reviews.

@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -29,20 +29,20 @@ def test_validation_system():
         category="functional"
     )
 
-    print("✓ AcceptanceCriteria created successfully")
+    print("âœ“ AcceptanceCriteria created successfully")
 
     # Test 2: Generate acceptance criteria from user story
     gen = AcceptanceCriteriaGenerator()
     user_story = "As a customer, I want to view my order history, so that I can track my purchases."
     criteria_list = gen.generate_from_user_story(user_story, "functional")
 
-    print(f"✓ Generated {len(criteria_list)} acceptance criteria from user story")
+    print(f"âœ“ Generated {len(criteria_list)} acceptance criteria from user story")
 
     # Test 3: Generate test cases from criteria
     test_gen = AcceptanceTestGenerator()
     test_cases = test_gen.generate_from_criteria(criteria_list[0])
 
-    print(f"✓ Generated {len(test_cases)} test cases from criteria")
+    print(f"âœ“ Generated {len(test_cases)} test cases from criteria")
 
     # Test 4: Create validation evidence
     evidence = ValidationEvidence(
@@ -53,7 +53,7 @@ def test_validation_system():
         data="/path/to/screenshot.png"
     )
 
-    print("✓ ValidationEvidence created successfully")
+    print("âœ“ ValidationEvidence created successfully")
 
     # Test 5: Create validation result
     result = ValidationResult(
@@ -64,7 +64,7 @@ def test_validation_system():
         passed_tests=["test-001"]
     )
 
-    print("✓ ValidationResult created successfully")
+    print("âœ“ ValidationResult created successfully")
 
     # Test 6: Test validation engine
     engine = ValidationEngine()
@@ -74,7 +74,7 @@ def test_validation_system():
         "security"
     )
 
-    print(f"✓ ValidationEngine processed requirement:")
+    print(f"âœ“ ValidationEngine processed requirement:")
     print(f"  - Generated {len(validation_result['acceptance_criteria'])} criteria")
     print(f"  - Generated {validation_result['test_suite']['total_tests']} test cases")
     print(f"  - Validation duration: {validation_result['duration_seconds']:.2f} seconds")
@@ -85,7 +85,7 @@ def test_validation_system():
 if __name__ == "__main__":
     success = test_validation_system()
     if success:
-        print("\n✓ All validation tests passed!")
+        print("\nâœ“ All validation tests passed!")
     else:
-        print("\n✗ Some validation tests failed!")
+        print("\nâœ— Some validation tests failed!")
         exit(1)

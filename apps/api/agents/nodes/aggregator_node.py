@@ -1,4 +1,4 @@
-import json
+﻿import json
 import logging
 
 from agents.sanitize import wrap_context, wrap_task
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 async def aggregator_node(state: AgentState) -> AgentState:
     """Aggregate results from parallel agents (reviewer, tester, security, architect)."""
-    logger.info("Aggregator phase — combining parallel outputs")
+    logger.info("Aggregator phase â€” combining parallel outputs")
 
     # Get user and project context from state (with fallbacks)
     user_id = state.get("user_id", "00000000-0000-0000-0000-000000000001")
@@ -20,7 +20,7 @@ async def aggregator_node(state: AgentState) -> AgentState:
     db = state.get("db")  # Database session would be passed in state in a real implementation
 
     if "aggregator" not in state["team_config"]:
-        logger.info("No aggregator configured — auto-combining outputs")
+        logger.info("No aggregator configured â€” auto-combining outputs")
         state["aggregator_output"] = _auto_aggregate(state)
         state["current_step"] = "team_lead_deliver"
         state["messages"].append({

@@ -1,4 +1,4 @@
-"""Third-party integrations (GitHub App, etc.)."""
+﻿"""Third-party integrations (GitHub App, etc.)."""
 
 from .github import GitHubClient, _findings_to_comments, default_pr_reviewer
 from .github_enhanced import (

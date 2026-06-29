@@ -68,6 +68,23 @@ class DatabasePool:
                     continue
 
                 sql = mf.read_text()
+                if "CREATE EXTENSION IF NOT EXISTS vector" in sql:
+                    # Check if vector extension is supported/available in pg_available_extensions
+                    is_available = await conn.fetchval(
+                        "SELECT EXISTS(SELECT 1 FROM pg_available_extensions WHERE name = 'vector')"
+                    )
+                    if not is_available:
+                        logger.warning(
+                            "pgvector extension is not available in PostgreSQL. Skipping vector migration: %s",
+                            mf.name,
+                        )
+                        # Mark as applied so we don't try again
+                        await conn.execute(
+                            "INSERT INTO schema_migrations (filename) VALUES ($1)",
+                            mf.name,
+                        )
+                        continue
+
                 async with conn.transaction():
                     await conn.execute(sql)
                     await conn.execute(

@@ -1,4 +1,4 @@
-"""GitHub App integration — PR review bot.
+﻿"""GitHub App integration â€” PR review bot.
 
 Implements the full GitHub App auth flow:
 
@@ -30,7 +30,7 @@ from core.config import settings
 logger = logging.getLogger(__name__)
 
 
-# ── Webhook signature ──────────────────────────────────────────────────────
+# â”€â”€ Webhook signature â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def verify_webhook_signature(secret: str, body: bytes, signature: str | None) -> bool:
@@ -43,7 +43,7 @@ def verify_webhook_signature(secret: str, body: bytes, signature: str | None) ->
     return hmac.compare_digest(expected, signature)
 
 
-# ── App authentication ─────────────────────────────────────────────────────
+# â”€â”€ App authentication â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def _load_private_key(value: str) -> str:
@@ -144,7 +144,7 @@ class GitHubClient:
             await self._http.aclose()
 
 
-# ── Review of a PR ─────────────────────────────────────────────────────────
+# â”€â”€ Review of a PR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 async def default_pr_reviewer(filename: str, patch: str) -> list[dict]:
@@ -244,7 +244,7 @@ async def handle_pull_request_event(
                 f"{len(all_findings)} issue(s), {blocking} blocking."
             )
         else:
-            summary = f"AgentForge reviewed {len(files)} file(s): no issues found. ✅"
+            summary = f"AgentForge reviewed {len(files)} file(s): no issues found. âœ…"
 
         await client.create_review(
             repo, number, body=summary, comments=comments,

@@ -1,4 +1,4 @@
-"""Thin HTTP client for the AgentForge API with token storage + auto-refresh."""
+﻿"""Thin HTTP client for the AgentForge API with token storage + auto-refresh."""
 
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ class AgentForgeClient:
         self._http = http or httpx.Client(timeout=120.0)
         self._owns_http = http is None
 
-    # ── auth ──────────────────────────────────────────────────────────
+    # â”€â”€ auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     def login(self, email: str, password: str) -> dict:
         data = self._raw("POST", "/auth/login", json={"email": email, "password": password})
         self._cfg.update({
@@ -97,7 +97,7 @@ class AgentForgeClient:
         save_config(self._cfg)
         return True
 
-    # ── requests ──────────────────────────────────────────────────────
+    # â”€â”€ requests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     def _raw(self, method: str, path: str, **kw):
         resp = self._http.request(method, f"{self.api_url}{path}", **kw)
         if resp.status_code >= 400:
@@ -116,7 +116,7 @@ class AgentForgeClient:
             raise APIError(resp.status_code, _detail(resp))
         return resp.json() if resp.content else {}
 
-    # ── review ────────────────────────────────────────────────────────
+    # â”€â”€ review â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     def submit_review(self, code: str, language: str | None = None) -> str:
         body = {"code": code}
         if language:
@@ -139,7 +139,7 @@ class AgentForgeClient:
             sleep(poll_interval)
         raise APIError(408, f"Review {review_id} timed out after {timeout}s")
 
-    # ── tasks ─────────────────────────────────────────────────────────
+    # â”€â”€ tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     def create_task(self, team_id: str, title: str, description: str,
                     project_id: str | None = None) -> dict:
         body = {"team_id": team_id, "title": title, "description": description}

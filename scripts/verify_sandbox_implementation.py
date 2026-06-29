@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Verification script for the Execution Sandbox Hardening implementation.
 This script verifies that all components are properly implemented and can be imported.
@@ -20,26 +20,26 @@ def test_imports():
             SandboxExecutor, SandboxConfig, SecurityLevel,
             NetworkPolicy, ResourceLimits, ExecutionResult
         )
-        print("✓ Sandbox executor imports successful")
+        print("âœ“ Sandbox executor imports successful")
     except Exception as e:
-        print(f"✗ Sandbox executor imports failed: {e}")
+        print(f"âœ— Sandbox executor imports failed: {e}")
         return False
 
     try:
         # Test test executor imports
         from apps.api.app.services.test_executor import TestExecutor, TestFramework
-        print("✓ Test executor imports successful")
+        print("âœ“ Test executor imports successful")
     except Exception as e:
-        print(f"✗ Test executor imports failed: {e}")
+        print(f"âœ— Test executor imports failed: {e}")
         return False
 
     try:
         # Test that we can instantiate the main classes
         from apps.api.app.services.sandbox_executor import sandbox_executor
         from apps.api.app.services.test_executor import test_executor
-        print("✓ Global instances accessible")
+        print("âœ“ Global instances accessible")
     except Exception as e:
-        print(f"✗ Global instances inaccessible: {e}")
+        print(f"âœ— Global instances inaccessible: {e}")
         return False
 
     return True
@@ -57,7 +57,7 @@ def test_config_creation():
         config = SandboxConfig()
         assert config.security_level == SecurityLevel.STANDARD
         assert config.network_policy == NetworkPolicy.NONE
-        print("✓ Default configuration creation successful")
+        print("âœ“ Default configuration creation successful")
 
         # Test custom config
         custom_config = SandboxConfig(
@@ -73,11 +73,11 @@ def test_config_creation():
         assert custom_config.security_level == SecurityLevel.MAXIMUM
         assert custom_config.network_policy == NetworkPolicy.RESTRICTED
         assert custom_config.resource_limits.cpu_cpus == 1.5
-        print("✓ Custom configuration creation successful")
+        print("âœ“ Custom configuration creation successful")
 
         return True
     except Exception as e:
-        print(f"✗ Configuration creation failed: {e}")
+        print(f"âœ— Configuration creation failed: {e}")
         return False
 
 def test_integration_points():
@@ -91,11 +91,11 @@ def test_integration_points():
 
         assert hasattr(test_executor, 'sandbox')
         assert isinstance(test_executor.sandbox, SandboxExecutor)
-        print("✓ Test executor properly integrates with sandbox executor")
+        print("âœ“ Test executor properly integrates with sandbox executor")
 
         return True
     except Exception as e:
-        print(f"✗ Integration point test failed: {e}")
+        print(f"âœ— Integration point test failed: {e}")
         return False
 
 def main():
@@ -120,11 +120,11 @@ def main():
     print(f"Results: {passed}/{total} test groups passed")
 
     if passed == total:
-        print("🎉 All verification tests passed!")
+        print("ðŸŽ‰ All verification tests passed!")
         print("The Execution Sandbox Hardening system is ready for use.")
         return 0
     else:
-        print("❌ Some verification tests failed.")
+        print("âŒ Some verification tests failed.")
         return 1
 
 if __name__ == "__main__":

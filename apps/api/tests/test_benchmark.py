@@ -1,4 +1,4 @@
-"""Tests for the benchmark scorer and runner (offline, deterministic)."""
+﻿"""Tests for the benchmark scorer and runner (offline, deterministic)."""
 
 import pytest
 

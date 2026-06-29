@@ -21,7 +21,7 @@ except ImportError:
 
 
 
-# ── Pool ────────────────────────────────────────────────────────────────
+# â”€â”€ Pool â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 _pool: "aioredis.Redis | None" = None
 
@@ -53,7 +53,7 @@ def _redis() -> "aioredis.Redis | None":
     return _pool
 
 
-# ── Review Store ────────────────────────────────────────────────────────
+# â”€â”€ Review Store â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 REVIEW_TTL = 3600
 REVIEW_KEY_PREFIX = "review:"
@@ -136,7 +136,7 @@ async def review_store_cleanup() -> None:
         _inmem_reviews.pop(rid, None)
 
 
-# ── Rate Limiter ────────────────────────────────────────────────────────
+# â”€â”€ Rate Limiter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 RATE_LIMIT_KEY_PREFIX = "ratelimit:"
 _INMEM_RATE_LIMITS_MAX = 10000
@@ -159,7 +159,9 @@ async def rate_limit_check(ip: str, limit: int = 10, window: int = 3600, key_pre
         count = results[1]
         if count >= limit:
             return False
-        await r.zadd(key, {str(int(now)): now})
+        import uuid
+        member_key = f"{int(now)}:{uuid.uuid4().hex[:8]}"
+        await r.zadd(key, {member_key: now})
         await r.expire(key, window)
         return True
     else:
@@ -185,7 +187,7 @@ async def rate_limit_reset() -> None:
     _inmem_rate_limits.clear()
 
 
-# ── Brute Force Protection ────────────────────────────────────────────
+# â”€â”€ Brute Force Protection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 BF_KEY_PREFIX = "bf:"
 _INMEM_BF: dict[str, list[float]] = defaultdict(list)
@@ -251,4 +253,3 @@ async def brute_force_reset() -> None:
 # Compatibility aliases
 get_review_state = review_store_get
 check_rate_limit = rate_limit_check
-

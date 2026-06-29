@@ -1,280 +1,132 @@
-<div align="center">
+# AgentForge
 
-# ⚡ AgentForge
+### **The Multi-Agent AI Workforce Orchestrator**
 
-### **The AI-Powered Development Operating System**
-
-*Coordinate a specialized team of AI agents to plan, build, review, and ship software — with your own API keys, on your own infrastructure.*
-
-[![Tests](https://img.shields.io/badge/tests-208%20passing-brightgreen?style=flat-square&logo=pytest)](apps/api/tests/)
-[![Type Security](https://img.shields.io/badge/mypy-0%20errors-blue?style=flat-square)](apps/api/)
-[![Linting](https://img.shields.io/badge/ruff-0%20findings-orange?style=flat-square)](apps/api/)
-[![License](https://img.shields.io/badge/license-MIT-purple?style=flat-square)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&logo=python)](apps/api/)
-
-</div>
+AgentForge is a self-hosted platform designed to coordinate teams of specialized AI agents (Lead, Builder, Reviewer, Tester) to plan, build, review, and test code. Bring your own keys, keep your source code on your own infrastructure, and monitor agent collaborations in real-time.
 
 ---
 
-## What is AgentForge?
+## Why AgentForge Exists
 
-AgentForge is an open-source multi-agent orchestration platform that replaces the solo developer loop with a coordinated AI engineering team.
-
-You write the task. AgentForge assembles the team, plans the implementation, generates the code, runs the tests, and reviews the output — all streamed live to your dashboard.
-
-**No hosted models. No data sent to third parties. Bring your own API keys.**
+Most AI tools operate as simple chat interfaces or solo agent loops. Real engineering, however, relies on collaboration and validation gates. AgentForge wraps specialized agent roles in a structured **LangGraph State Graph**, fanning out tasks to builders, running code in isolated **Docker sandboxes**, and routing outputs through automated review and test validators before sign-off.
 
 ---
 
-## ✨ Features
+## System Architecture
 
-| Feature | Description | Status |
-|:---|:---|:---:|
-| **Multi-Agent Orchestration** | LangGraph-powered DAG: Lead → Builder → Reviewer → Deliver | ✅ Active |
-| **BYOK (Bring Your Own Key)** | Per-user, per-project API key management with AES-256 encryption at rest | ✅ Active |
-| **GitHub Native Integration** | Trigger reviews on Pull Requests, auto-post agent findings as PR comments | ✅ Active |
-| **Evidence Validation Gate** | Each agent output validated for confidence, completeness, and correctness | ✅ Active |
-| **Tree-Sitter Intelligence** | Live symbol index, dependency graphs, and call-scope awareness | ✅ Active |
-| **Secure Sandbox Execution** | Generated test suites run in isolated containers | ✅ Active |
-| **Vector Memory** | Long-term style and decision recall via pgvector embeddings | ✅ Active |
-| **Local Auth (JWT + bcrypt)** | Self-contained user accounts — no third-party auth service required | ✅ Active |
-| **Prometheus Metrics** | Structured observability at `/api/v1/metrics` | ✅ Active |
-| **Real-time Streaming** | WebSocket-based live agent output delivery | ✅ Active |
-| **Enterprise SSO / RBAC** | Multi-tenant team access and role-based controls | 📋 Planned |
+```text
+  ┌─────────────────────────────────────────────────────────────┐
+  │                        Next.js Client                       │
+  └──────────────────────────────┬──────────────────────────────┘
+                                 │ HTTPS REST / WebSockets
+  ┌──────────────────────────────▼──────────────────────────────┐
+  │                     FastAPI Gateway Server                  │
+  └──────┬───────────────────────┬───────────────────────┬──────┘
+         │                       │                       │
+  ┌──────▼──────┐         ┌──────▼──────┐         ┌──────▼──────┐
+  │  PostgreSQL │         │    Redis    │         │  LangGraph  │
+  │  (Storage)  │         │(Rate limits)│         │(Engine loop)│
+  └─────────────┘         └─────────────┘         └──────┬──────┘
+                                                         │
+                                                  ┌──────▼──────┐
+                                                  │ Docker Host │
+                                                  │ (Sandboxes) │
+                                                  └─────────────┘
+```
+
+- **Frontend**: Next.js App Router client communicating via REST APIs and WebSocket event channels.
+- **Backend**: FastAPI server with modular router architecture, PostgreSQL connection pools (`asyncpg`), and Redis rate-limiting.
+- **Agent Orchestrator**: LangGraph state machine tracking agent state transitions, prompting, and validation outputs.
+- **Docker Sandboxes**: Secure, isolated test executors running generated code inside sandboxed containers with strict syscall resource caps.
 
 ---
 
-## 🚀 Quick Start
+## Capabilities
+
+- **State Graph Pipeline**: Coordinated flow routing tasks between Lead (planning), Builder (code generation), Reviewer (audit), and Tester (verification).
+- **Docker Container Sandboxing**: Runs pytest and jest test suites inside secure sandboxed Docker environments with fallback to local process isolation.
+- **Local Authentication**: Complete JWT token authentication, password hashing (`bcrypt`), tenant isolation, and sliding window rotating refresh tokens.
+- **BYOK (Bring Your Own Key)**: Layered API key resolution (Project → User → Global Settings) encrypted at rest using AES-256 Fernet.
+- **Observability**: Live task execution pipelines, metrics tracking, and stdout log collectors.
+
+---
+
+## Quick Start
 
 ### Prerequisites
 
-- **Docker** (recommended) — or Python 3.10+ and PostgreSQL/Redis installed locally
-- An API key from [OpenAI](https://platform.openai.com/), [Anthropic](https://console.anthropic.com/), or [Google AI](https://aistudio.google.com/)
+- **Docker** and **Docker Compose**
+- **Python 3.11+**
+- **Node.js 22+** and **pnpm**
 
-### 1. Clone & Boot
-
+### 1. Boot Local Services
+Spin up PostgreSQL and Redis:
 ```bash
-git clone https://github.com/your-org/AgentForge.git
-cd AgentForge
-
-# Spin up PostgreSQL + Redis
 docker compose up -d
 ```
 
-### 2. Configure the Backend
-
+### 2. Configure Backend
+Create the API environment settings:
 ```bash
 cd apps/api
-python -m venv venv && source venv/bin/activate  # or .\venv\Scripts\Activate.ps1 on Windows
+python -m venv venv
+# On macOS/Linux:
+source venv/bin/activate
+# On Windows (PowerShell):
+.\venv\Scripts\Activate.ps1
+
 pip install -r requirements.txt
-
-cp ../.env.example .env
-# Edit .env — set your JWT_SECRET and at least one provider API key
+cp .env.example .env
+# Edit .env — set your JWT_SECRET and add your LLM provider API keys
 ```
 
-> **Note**: The backend environment file is located at `apps/api/.env`. A template with all required variables (including frontend variables) is available in the repository root as `.env.example`.
-
-### 3. Start the API
-
+### 3. Run Migrations & Start Backend
+The backend auto-runs database schema migrations on launch:
 ```bash
-python -m uvicorn app.main:app --reload
-# → http://localhost:8000
-# → http://localhost:8000/docs  (interactive OpenAPI)
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
-### 4. Start the Dashboard
-
+### 4. Start Web Dashboard
 ```bash
 cd ../web
-pnpm install && pnpm dev
-# → http://localhost:3000
+pnpm install
+pnpm dev
 ```
+Open [http://localhost:3000](http://localhost:3000) to access the dashboard.
 
-### 5. Run Your First Review (CLI)
+---
 
+## API Overview
+
+All core REST endpoints are versioned under `/api/v1`:
+
+- `POST /auth/register` — Create a new developer account.
+- `POST /auth/login` — Authenticate and retrieve JWT token pair.
+- `POST /tasks` — Submit a task to the orchestrator queue.
+- `GET /tasks/{task_id}/messages` — Fetch task execution logs.
+- `GET /teams` — Retrieve available agent teams.
+- `PUT /teams/{team_id}` — Edit team models configurations.
+
+---
+
+## Security
+
+1. **Sandboxing**: Generated files are executed in non-root Docker sandboxes with dropped Linux capabilities and custom seccomp profiles to prevent breakout.
+2. **Key Protection**: Stored API keys are encrypted at rest using Fernet keys configured via environment variables.
+3. **Tenant Isolation**: Every API endpoint filters records by the authenticated user's ID to prevent IDOR access.
+
+---
+
+## Testing
+
+Run the backend Pytest suite:
 ```bash
-cd ../cli
-pip install --editable .
-agentforge login
-agentforge review path/to/your/file.py
-```
-
-> **Migrations run automatically** on first startup. No manual SQL setup required.
-
----
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  Developer                                               │
-│    ├── Next.js Dashboard  (REST + WebSocket)             │
-│    └── Python CLI         (REST)                         │
-│                │                                         │
-│         FastAPI Backend (port 8000)                      │
-│           ├── Auth (JWT/bcrypt)                          │
-│           ├── BYOK Key Manager (AES-256)                 │
-│           ├── GitHub App Webhooks                        │
-│           └── Agent Orchestrator                         │
-│                    │                                     │
-│         LangGraph Workflow Engine                        │
-│           Team Lead → Builder → Reviewer → Deliver       │
-│                    │                                     │
-│     ┌──────────────┴──────────────┐                      │
-│  PostgreSQL + pgvector       Redis Pub/Sub               │
-│  (tasks, users, memory)      (real-time streaming)       │
-└─────────────────────────────────────────────────────────┘
-```
-
-### The Agent Workflow
-
-```
-User Task
-   │
-   ▼
-Team Lead      ← Plans implementation, scopes files, assigns roles
-   │
-   ▼
-Builder        ← Generates code against the plan
-   │
-   ▼
-Reviewer       ← Audits output for correctness, security, style
-   │
-   ▼
-Deliver        ← Synthesizes final output, posts to dashboard or PR
-```
-
-Each step is bounded by configurable timeouts, retry limits, and evidence validation checkpoints.
-
----
-
-## 🔑 BYOK Key Management
-
-AgentForge never stores plaintext API keys. Every credential is:
-
-1. **Validated** — format-checked and live-tested against the provider API before saving
-2. **Encrypted** — AES-256 Fernet symmetric encryption at rest
-3. **Scoped** — resolved at runtime: user-key → project-key → system-key
-
-```bash
-# Add your key via the dashboard, or via API:
-POST /api/v1/keys
-{
-  "provider": "openai",
-  "key": "sk-..."
-}
-```
-
-Supported providers: **OpenAI**, **Anthropic**, **Google Gemini**, **OpenRouter**, **Groq**
-
----
-
-## 🔗 GitHub Native Integration
-
-Install the AgentForge GitHub App on any repository:
-
-- **PR Review Trigger:** Every Pull Request automatically receives an AI review
-- **Inline Comments:** Findings are posted as GitHub PR review comments
-- **HMAC Validation:** Webhook payloads verified via `X-Hub-Signature-256`
-
----
-
-## 🧪 Testing & Quality
-
-```bash
-# All 208 tests
-python -m pytest
-
-# Type checking
-python -m mypy apps/api
-
-# Linting
-python -m ruff check apps/api
-```
-
-| Check | Result |
-|:---|:---|
-| Tests | 208 / 208 ✅ |
-| Mypy | 0 errors ✅ |
-| Ruff | 0 findings ✅ |
-
----
-
-## 📂 Repository Structure
-
-```
-AgentForge/
-├── apps/
-│   ├── api/              # FastAPI backend, agent graph, database layer
-│   │   ├── agents/       # LangGraph nodes (lead, builder, reviewer, etc.)
-│   │   ├── app/          # Routes, auth, WebSocket handlers
-│   │   ├── core/         # Config, encryption, providers, observability
-│   │   ├── migrations/   # SQL migration scripts (auto-applied on boot)
-│   │   └── tests/        # 208 pytest tests
-│   ├── web/              # Next.js 15 App Router dashboard
-│   └── cli/              # Python Click CLI (`agentforge` command)
-│
-├── docs/                 # Full documentation vault
-│   ├── getting-started/  # ONBOARDING.md, SETUP.md
-│   ├── architecture/     # SYSTEM_ARCHITECTURE.md, TECH_SPEC.md, SCHEMA.md
-│   ├── agents/           # AGENT_SYSTEM.md
-│   ├── api/              # API_REFERENCE.md
-│   ├── security/         # SECURITY_MODEL.md, DATA_PRIVACY.md
-│   └── release/          # Release audit reports and readiness docs
-│
-├── scripts/              # Developer utilities and validation scripts
-├── .env.example          # Template containing ALL environment variables (frontend + backend)
-├── docker-compose.yml    # PostgreSQL + Redis local stack
-├── Dockerfile            # Production API container (multi-stage)
-├── CONTRIBUTING.md
-├── SECURITY.md
-└── LICENSE
+cd apps/api
+.\venv\Scripts\pytest.exe
 ```
 
 ---
 
-## 📖 Documentation
+## License
 
-| Document | Description |
-|:---|:---|
-| [Onboarding Guide](docs/getting-started/ONBOARDING.md) | First-time developer setup walkthrough |
-| [Environment Setup](docs/getting-started/SETUP.md) | All environment variables and configuration reference |
-| [System Architecture](docs/architecture/SYSTEM_ARCHITECTURE.md) | Component layout and data flows |
-| [Agent System](docs/agents/AGENT_SYSTEM.md) | LangGraph nodes, roles, memory, and validation |
-| [API Reference](docs/api/API_REFERENCE.md) | REST endpoints and WebSocket protocol |
-| [GitHub Integration](docs/integrations/GITHUB.md) | GitHub App installation and webhook setup |
-| [Security Model](docs/security/SECURITY_MODEL.md) | Auth, encryption, isolation, and threat model |
-| [Release Notes](RELEASE_NOTES.md) | V1.0.0 release highlights |
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) before opening a PR.
-
-```bash
-# Before submitting any PR:
-python -m pytest          # must pass 100%
-python -m mypy apps/api   # must be clean
-python -m ruff check apps/api  # must be clean
-```
-
----
-
-## 🔒 Security
-
-Found a vulnerability? Please review our [Security Policy](SECURITY.md) and report via the process described there. **Do not open a public GitHub issue.**
-
----
-
-## 📄 License
-
-AgentForge is open-source software licensed under the [MIT License](LICENSE).
-
----
-
-<div align="center">
-
-**Built for engineers who want AI to do the heavy lifting — without giving up control.**
-
-</div>
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

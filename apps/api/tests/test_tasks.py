@@ -1,4 +1,4 @@
-"""Tests for task creation and lifecycle."""
+﻿"""Tests for task creation and lifecycle."""
 
 import pytest
 

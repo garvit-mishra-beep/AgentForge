@@ -1,4 +1,4 @@
-"""Tests for file parser edge cases."""
+﻿"""Tests for file parser edge cases."""
 
 import tempfile
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""Tests for the Quick Review route with mocked AI providers and Redis."""
+﻿"""Tests for the Quick Review route with mocked AI providers and Redis."""
 
 import asyncio
 import json

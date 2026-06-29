@@ -1,17 +1,17 @@
-"""Benchmark runner: compare conditions on the labeled dataset and compute deltas.
+﻿"""Benchmark runner: compare conditions on the labeled dataset and compute deltas.
 
 A *condition* is a way of solving a task, expressed as a ``Solver``. We ship:
 
-  - ``SingleModelSolver``    — one model, one shot (the baseline).
-  - ``TeamReviewSolver``     — builder -> reviewer -> builder repair loop. This is
+  - ``SingleModelSolver``    â€” one model, one shot (the baseline).
+  - ``TeamReviewSolver``     â€” builder -> reviewer -> builder repair loop. This is
                                the multi-agent hypothesis: does a review+repair
                                loop beat a single pass?
-  - ``MockSolver``           — deterministic, no network. Lets the harness + its
+  - ``MockSolver``           â€” deterministic, no network. Lets the harness + its
                                numbers be unit-tested in CI without an external provider.
 
 The runner scores every (condition, task) pair with :mod:`benchmarks.scorer`,
 aggregates pass-rate / mean-score per condition, and reports the *computed* lift
-of the team over the baseline — replacing the fictional hardcoded "40%".
+of the team over the baseline â€” replacing the fictional hardcoded "40%".
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ class Solver(Protocol):
         ...
 
 
-# ── Real solvers (require a live provider, e.g., a remote API) ────────────────────
+# â”€â”€ Real solvers (require a live provider, e.g., a remote API) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @dataclass
@@ -98,7 +98,7 @@ class TeamReviewSolver:
         return repaired
 
 
-# ── Mock solver (deterministic, for CI) ────────────────────────────────────
+# â”€â”€ Mock solver (deterministic, for CI) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 class MockSolver:
@@ -140,7 +140,7 @@ class MockSolver:
         return table.get(task["id"], "```python\n# no solution\n```")
 
 
-# ── Aggregation ────────────────────────────────────────────────────────────
+# â”€â”€ Aggregation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @dataclass

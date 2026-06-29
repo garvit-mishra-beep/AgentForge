@@ -1,4 +1,4 @@
-"""Long-Term Memory API routes."""
+﻿"""Long-Term Memory API routes."""
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 

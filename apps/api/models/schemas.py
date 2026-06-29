@@ -1,11 +1,11 @@
-from datetime import datetime
-from enum import Enum
+﻿from datetime import datetime
+from enum import StrEnum
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
 
-class ProviderName(str, Enum):
+class ProviderName(StrEnum):
     openai = "openai"
     anthropic = "anthropic"
     google = "google"
@@ -13,7 +13,7 @@ class ProviderName(str, Enum):
     groq = "groq"
 
 
-class AgentRole(str, Enum):
+class AgentRole(StrEnum):
     team_lead = "team_lead"
     builder = "builder"
     reviewer = "reviewer"
@@ -26,7 +26,7 @@ class AgentRole(str, Enum):
     evidence_validator = "evidence_validator"
 
 
-class MessageType(str, Enum):
+class MessageType(StrEnum):
     plan = "plan"
     code = "code"
     review = "review"
@@ -41,20 +41,20 @@ class MessageType(str, Enum):
     documentation = "documentation"
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     pending = "pending"
     running = "running"
     completed = "completed"
     failed = "failed"
 
 
-class ExecStatus(str, Enum):
+class ExecStatus(StrEnum):
     running = "running"
     completed = "completed"
     failed = "failed"
 
 
-# ── Auth ───────────────────────────────────────────────────────────────
+# â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class LoginRequest(BaseModel):
     email: str = Field(..., min_length=1, max_length=255)
@@ -75,7 +75,7 @@ class AuthResponse(BaseModel):
     name: str
 
 
-# ── Teams ──────────────────────────────────────────────────────────────
+# â”€â”€ Teams â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class TeamCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -123,7 +123,7 @@ class TeamMemberResponse(BaseModel):
     created_at: datetime
 
 
-# ── Tasks ──────────────────────────────────────────────────────────────
+# â”€â”€ Tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class TaskCreate(BaseModel):
     team_id: str
@@ -161,7 +161,7 @@ class TaskDetailResponse(TaskResponse):
     messages: list[TaskMessageResponse] = []
 
 
-# ── Executions ─────────────────────────────────────────────────────────
+# â”€â”€ Executions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ExecutionResponse(BaseModel):
     id: UUID | str
@@ -173,7 +173,7 @@ class ExecutionResponse(BaseModel):
     error_message: str | None
 
 
-# ── API Keys ───────────────────────────────────────────────────────────
+# â”€â”€ API Keys â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ApiKeyCreate(BaseModel):
     provider: ProviderName
@@ -231,7 +231,7 @@ class ErrorResponse(BaseModel):
     detail: str
 
 
-# ── Projects ───────────────────────────────────────────────────────────
+# â”€â”€ Projects â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ProjectCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -257,7 +257,7 @@ class ProjectTeamAssign(BaseModel):
     team_id: str
 
 
-# ── Files ──────────────────────────────────────────────────────────────
+# â”€â”€ Files â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class FileResponse(BaseModel):
     id: UUID | str
@@ -275,7 +275,7 @@ class FileResponse(BaseModel):
     updated_at: datetime
 
 
-# ── API Endpoints & Usage ──────────────────────────────────────────────
+# â”€â”€ API Endpoints & Usage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ApiEndpointCreate(BaseModel):
     provider: ProviderName
@@ -323,7 +323,7 @@ class UsageStatsResponse(BaseModel):
     daily_data: list[UsageDataPoint]
 
 
-# ── Code Review ────────────────────────────────────────────────────────
+# â”€â”€ Code Review â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ReviewRequest(BaseModel):
     code: str = Field(..., min_length=1)

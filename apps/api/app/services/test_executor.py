@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test Execution Service with Sandbox Security
 Executes generated tests in secure, isolated environments.
 """
@@ -6,7 +6,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 # Import the sandbox executor and related types
@@ -21,13 +21,13 @@ from app.services.sandbox_executor import (
 logger = logging.getLogger(__name__)
 
 
-class TestFramework(str, Enum):
+class TestFramework(StrEnum):
     PYTEST = "pytest"
     VITEST = "vitest"
     JEST = "jest"
 
 
-class TestResultStatus(str, Enum):
+class TestResultStatus(StrEnum):
     PASSED = "passed"
     FAILED = "failed"
     ERROR = "error"

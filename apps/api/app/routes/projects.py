@@ -43,11 +43,11 @@ def _sanitize_filename(filename: str) -> str:
     return filename
 
 
-def _validate_filepath(storage_path: Path) -> None:
-    """Ensure resolved path is within the upload directory (path traversal guard)."""
+def _validate_filepath(storage_path: Path, allowed_base: Path) -> None:
+    """Ensure resolved path is within the allowed base directory (path traversal guard)."""
     resolved = storage_path.resolve()
-    upload_resolved = UPLOAD_DIR.resolve()
-    if not str(resolved).startswith(str(upload_resolved)):
+    base_resolved = allowed_base.resolve()
+    if not str(resolved).startswith(str(base_resolved)):
         raise HTTPException(status_code=400, detail="Invalid file path")
 
 
@@ -76,7 +76,7 @@ def _ensure_upload_dir(project_id: str):
     return path
 
 
-# ── Projects CRUD ──────────────────────────────────────────────────────
+# â”€â”€ Projects CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @router.post("", status_code=201)
@@ -191,7 +191,7 @@ async def delete_project(
         shutil.rmtree(upload_path, ignore_errors=True)
 
 
-# ── Project-Team Association ───────────────────────────────────────────
+# â”€â”€ Project-Team Association â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @router.post("/{project_id}/teams", status_code=201)
@@ -250,7 +250,7 @@ async def remove_team_from_project(
         raise HTTPException(status_code=404, detail="Team not assigned to this project")
 
 
-# ── File Upload ────────────────────────────────────────────────────────
+# â”€â”€ File Upload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @router.post("/{project_id}/upload", status_code=201)
@@ -277,14 +277,20 @@ async def upload_file(
     if ext and ext not in _ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"File extension '{ext}' is not allowed")
 
-    content = await file.read()
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=413, detail=f"File too large. Max {MAX_FILE_SIZE // (1024*1024)}MB")
+    # Read file in chunks to check size before fully loading into memory
+    size = 0
+    chunks = []
+    while chunk := await file.read(8192):  # Read in 8KB chunks
+        size += len(chunk)
+        if size > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail=f"File too large. Max {MAX_FILE_SIZE // (1024*1024)}MB")
+        chunks.append(chunk)
+    content = b"".join(chunks)
 
     file_hash = hashlib.sha256(content).hexdigest()
     file_id = str(uuid.uuid4())
     storage_path = _ensure_upload_dir(project_id) / f"{file_id}_{safe_filename}"
-    _validate_filepath(storage_path)
+    _validate_filepath(storage_path, _ensure_upload_dir(project_id))
 
     with open(storage_path, "wb") as f:
         f.write(content)
@@ -339,9 +345,15 @@ async def upload_zip(
     if not file.filename or not file.filename.endswith((".zip", ".tar.gz", ".tgz")):
         raise HTTPException(status_code=400, detail="Only .zip archives are supported")
 
-    content = await file.read()
-    if len(content) > MAX_FILE_SIZE * 2:
-        raise HTTPException(status_code=413, detail="Archive too large")
+    # Read file in chunks to check size before fully loading into memory
+    size = 0
+    chunks = []
+    while chunk := await file.read(8192):  # Read in 8KB chunks
+        size += len(chunk)
+        if size > MAX_FILE_SIZE * 2:
+            raise HTTPException(status_code=413, detail="Archive too large")
+        chunks.append(chunk)
+    content = b"".join(chunks)
 
     storage_root = _ensure_upload_dir(project_id) / "archive"
     storage_root.mkdir(exist_ok=True)
@@ -352,6 +364,7 @@ async def upload_zip(
         f.write(content)
 
     extracted = []
+    total_uncompressed_size = 0
 
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as zf:
@@ -359,17 +372,28 @@ async def upload_zip(
                 if zip_info.is_dir():
                     continue
 
+                total_uncompressed_size += zip_info.file_size
+                if total_uncompressed_size > MAX_FILE_SIZE * 10:
+                    raise HTTPException(status_code=400, detail="ZIP bomb detected: aggregate uncompressed size exceeds limit")
+
+                # Check for ZIP bombs by comparing compressed vs uncompressed size
+                if zip_info.file_size > MAX_FILE_SIZE * 10:  # Allow 10x expansion
+                    raise HTTPException(status_code=400, detail="ZIP bomb detected: excessive uncompressed size")
+
                 normalized = zip_info.filename.replace("\\", "/")
                 safe_name = _sanitize_filename(Path(normalized).name)
                 ext = Path(safe_name).suffix.lower()
                 if ext and ext not in _ALLOWED_EXTENSIONS:
                     continue
 
+                # Use normalized path for validation and extraction
                 entry_path = (storage_root / normalized).resolve()
-                _validate_filepath(entry_path)
+                _validate_filepath(entry_path, storage_root)
                 entry_path.parent.mkdir(parents=True, exist_ok=True)
 
-                file_hash = hashlib.sha256(zf.read(zip_info.filename)).hexdigest()
+                # Read file data using the validated path
+                file_data = zf.read(zip_info.filename)
+                file_hash = hashlib.sha256(file_data).hexdigest()
                 entry_id = str(uuid.uuid4())
 
                 zf.extract(zip_info, storage_root)
@@ -522,7 +546,7 @@ async def download_file(
     )
 
 
-# ── Helpers ────────────────────────────────────────────────────────────
+# â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def _trigger_context_parse(db, file_id: uuid.UUID, filepath: str, filename: str):

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Model registry for managing AI provider configurations and model routing.
 Byok-first (Bring Your Own Key) implementation.
 """

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Repository File Parser
 Parses code files to extract symbols, imports, and chunks.
 """
@@ -93,7 +93,7 @@ def _count_tokens_estimate(text: str) -> int:
     return len(text) // 4
 
 
-# ── Python Parser ────────────────────────────────────────────────────────
+# â”€â”€ Python Parser â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _parse_python(content: str) -> tuple[list[CodeSymbol], list[CodeImport], list[CodeChunk]]:
     symbols: list[CodeSymbol] = []
@@ -208,7 +208,7 @@ def _parse_python(content: str) -> tuple[list[CodeSymbol], list[CodeImport], lis
     return symbols, imports, chunks
 
 
-# ── Generic Regex-based Parser ───────────────────────────────────────────
+# â”€â”€ Generic Regex-based Parser â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 # Patterns for common languages
 PATTERNS = {
@@ -347,7 +347,7 @@ def _parse_generic(content: str, language: str, filename: str) -> tuple[list[Cod
     return symbols, imports, chunks
 
 
-# ── Public API ───────────────────────────────────────────────────────────
+# â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def parse_file(file_id: str, file_path: str, content: str | None = None) -> ParsedFile:
     """

@@ -20,6 +20,11 @@ logger = logging.getLogger(__name__)
 
 def _route_after_builder(state: Any) -> list[Any]:
     """Route to appropriate validation nodes after builder completes."""
+    results = state.get("evidence_validation_result", {})
+    if not results.get("builder", {}).get("is_valid", True):
+        logger.warning("Builder evidence validation failed. Routing to delivery.")
+        return ["team_lead_deliver"]
+
     targets = []
     if "reviewer" in state["team_config"]:
         targets.append("reviewer")
@@ -27,6 +32,9 @@ def _route_after_builder(state: Any) -> list[Any]:
         targets.append("tester")
     if "security" in state["team_config"]:
         targets.append("security")
+
+    if not targets:
+        return ["aggregator"]
     return targets
 
 
@@ -66,16 +74,49 @@ def build_graph() -> Any:
     # Sequential flow with validation checkpoints
     workflow.add_edge("team_lead_plan", "planner")
     workflow.add_edge("planner", "planner_evidence_validation")
-    workflow.add_edge("planner_evidence_validation", "architect")
+
+    # Conditional branching on validation gates
+    def _route_after_planner_validation(state: Any) -> str:
+        results = state.get("evidence_validation_result", {})
+        if not results.get("planner", {}).get("is_valid", True):
+            logger.warning("Planner evidence validation failed. Routing to delivery.")
+            return "team_lead_deliver"
+        return "architect"
+
+    workflow.add_conditional_edges(
+        "planner_evidence_validation",
+        _route_after_planner_validation,
+        {
+            "team_lead_deliver": "team_lead_deliver",
+            "architect": "architect",
+        }
+    )
+
     workflow.add_edge("architect", "architect_evidence_validation")
-    workflow.add_edge("architect_evidence_validation", "builder")
+
+    def _route_after_architect_validation(state: Any) -> str:
+        results = state.get("evidence_validation_result", {})
+        if not results.get("architect", {}).get("is_valid", True):
+            logger.warning("Architect evidence validation failed. Routing to delivery.")
+            return "team_lead_deliver"
+        return "builder"
+
+    workflow.add_conditional_edges(
+        "architect_evidence_validation",
+        _route_after_architect_validation,
+        {
+            "team_lead_deliver": "team_lead_deliver",
+            "builder": "builder",
+        }
+    )
+
     workflow.add_edge("builder", "builder_evidence_validation")
 
     # After builder validation, fan out to parallel agents
     workflow.add_conditional_edges(
         "builder_evidence_validation",
         _route_after_builder,
-        ["reviewer", "tester", "security"]
+        ["reviewer", "tester", "security", "aggregator", "team_lead_deliver"]
     )
 
     # Parallel execution paths with validation after each
@@ -83,18 +124,61 @@ def build_graph() -> Any:
     workflow.add_edge("tester", "tester_evidence_validation")
     workflow.add_edge("security", "security_evidence_validation")
 
-    # After parallel validation, all go to aggregator
-    workflow.add_edge("reviewer_evidence_validation", "aggregator")
-    workflow.add_edge("tester_evidence_validation", "aggregator")
-    workflow.add_edge("security_evidence_validation", "aggregator")
+    # After parallel validation, check validation status before moving to aggregator
+    def _route_after_parallel_validation(state: Any, role: str) -> str:
+        results = state.get("evidence_validation_result", {})
+        if not results.get(role, {}).get("is_valid", True):
+            logger.warning("%s evidence validation failed. Routing to delivery.", role.capitalize())
+            return "team_lead_deliver"
+        return "aggregator"
+
+    workflow.add_conditional_edges(
+        "reviewer_evidence_validation",
+        lambda s: _route_after_parallel_validation(s, "reviewer"),
+        {"team_lead_deliver": "team_lead_deliver", "aggregator": "aggregator"}
+    )
+    workflow.add_conditional_edges(
+        "tester_evidence_validation",
+        lambda s: _route_after_parallel_validation(s, "tester"),
+        {"team_lead_deliver": "team_lead_deliver", "aggregator": "aggregator"}
+    )
+    workflow.add_conditional_edges(
+        "security_evidence_validation",
+        lambda s: _route_after_parallel_validation(s, "security"),
+        {"team_lead_deliver": "team_lead_deliver", "aggregator": "aggregator"}
+    )
 
     # Aggregator with validation
     workflow.add_edge("aggregator", "aggregator_evidence_validation")
-    workflow.add_edge("aggregator_evidence_validation", "deployment")
+
+    def _route_after_aggregator_validation(state: Any) -> str:
+        results = state.get("evidence_validation_result", {})
+        if not results.get("aggregator", {}).get("is_valid", True):
+            logger.warning("Aggregator evidence validation failed. Routing to delivery.")
+            return "team_lead_deliver"
+        return "deployment"
+
+    workflow.add_conditional_edges(
+        "aggregator_evidence_validation",
+        _route_after_aggregator_validation,
+        {"team_lead_deliver": "team_lead_deliver", "deployment": "deployment"}
+    )
 
     # Deployment with validation
     workflow.add_edge("deployment", "deployment_evidence_validation")
-    workflow.add_edge("deployment_evidence_validation", "team_lead_deliver")
+
+    def _route_after_deployment_validation(state: Any) -> str:
+        results = state.get("evidence_validation_result", {})
+        if not results.get("deployment", {}).get("is_valid", True):
+            logger.warning("Deployment evidence validation failed. Routing to delivery.")
+            return "team_lead_deliver"
+        return "team_lead_deliver"
+
+    workflow.add_conditional_edges(
+        "deployment_evidence_validation",
+        _route_after_deployment_validation,
+        {"team_lead_deliver": "team_lead_deliver"}
+    )
 
     # Final delivery
     workflow.add_edge("team_lead_deliver", END)

@@ -3,7 +3,7 @@
 # User-requested patterns
 *.zip
 node_modules/
-apps/api/uploads/
+uploads/
 .coverage
 *.tsbuildinfo
 *_stdout.txt
@@ -35,3 +35,7 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+
+# Virtual Environments
+venv/
+.venv/

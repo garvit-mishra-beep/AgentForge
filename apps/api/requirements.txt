@@ -1,10 +1,8 @@
-# AgentForge API Dependencies
-# Extracted from imports in source code
+# AUTO-GENERATED from pyproject.toml — do not edit manually
 fastapi==0.104.1
 uvicorn[standard]==0.27.0
 python-multipart==0.0.6
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
 python-dotenv==1.0.0
 asyncpg==0.29.0
 redis==5.0.1

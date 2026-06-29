@@ -1,4 +1,4 @@
-import type { TaskMessage, Task, Execution, Team } from "./types";
+﻿import type { TaskMessage, Task, Execution, Team } from "./types";
 
 const BASE_TIME = new Date();
 

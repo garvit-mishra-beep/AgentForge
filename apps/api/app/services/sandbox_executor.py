@@ -1,4 +1,4 @@
-"""
+﻿"""
 Sandbox Execution Service for AgentForge.
 Provides secure, isolated execution environments for running untrusted code.
 """
@@ -9,7 +9,7 @@ import shutil
 import tempfile
 import time
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 try:
@@ -33,14 +33,14 @@ class ResourceLimits:
     max_open_files: int = 64
 
 
-class SandboxType(str, Enum):
+class SandboxType(StrEnum):
     """Types of sandboxes available."""
     DOCKER = "docker"
     PROCESS = "process"  # Fallback to restricted process execution
     NONE = "none"  # No sandboxing (for trusted code only)
 
 
-class NetworkPolicy(str, Enum):
+class NetworkPolicy(StrEnum):
     """Network access policies for sandboxes."""
     NONE = "none"  # No network access
     INTERNAL = "internal"  # Only internal/loopback network
@@ -48,7 +48,7 @@ class NetworkPolicy(str, Enum):
     FULL = "full"  # Full network access (not recommended for untrusted code)
 
 
-class SecurityLevel(str, Enum):
+class SecurityLevel(StrEnum):
     """Security levels for sandbox execution."""
     MINIMAL = "minimal"  # Basic isolation
     STANDARD = "standard"  # Standard security restrictions

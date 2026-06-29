@@ -1,9 +1,9 @@
-"""Feedback-driven learning service (the quality flywheel).
+﻿"""Feedback-driven learning service (the quality flywheel).
 
 Records whether developers accept or reject each review finding, then surfaces
 the finding *patterns* a given user/project most often rejects. The reviewer
 node injects those patterns into its prompt so the critic learns to stop
-emitting low-signal noise for that user — a data moat no generic model has
+emitting low-signal noise for that user â€” a data moat no generic model has
 (FEATURE_GAP Major Bet #2).
 """
 
@@ -101,7 +101,7 @@ def format_rejected_patterns_for_prompt(patterns: list[dict]) -> str:
     if not patterns:
         return ""
     lines = [
-        "LEARNED SIGNAL — this developer has previously REJECTED findings like these "
+        "LEARNED SIGNAL â€” this developer has previously REJECTED findings like these "
         "as noise. Do not re-raise them unless clearly material:",
     ]
     for p in patterns:

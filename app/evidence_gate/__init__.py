@@ -1,4 +1,4 @@
-"""
+﻿"""
 Evidence Gate System for AgentForge.
 
 This package implements evidence-based approval workflows requiring agents to

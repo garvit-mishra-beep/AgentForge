@@ -1,4 +1,4 @@
-"""
+﻿"""
 Team Lead Evidence Gate for AgentForge.
 Implements evidence-based approval workflow for agent outputs.
 """

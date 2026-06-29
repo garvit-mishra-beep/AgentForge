@@ -1,4 +1,4 @@
-"""Locust load testing script for AgentForge API.
+﻿"""Locust load testing script for AgentForge API.
 
 Usage:
     locust -f locustfile.py --host=http://localhost:8000

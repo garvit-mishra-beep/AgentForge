@@ -1,4 +1,4 @@
-"""AgentForge evaluation framework.
+﻿"""AgentForge evaluation framework.
 
 Behavioral regression evals for the agent layer: structured-output contracts,
 reviewer verdict behavior, aggregator decision logic, and injection resistance.

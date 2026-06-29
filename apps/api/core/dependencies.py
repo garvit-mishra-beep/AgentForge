@@ -1,4 +1,4 @@
-"""
+﻿"""
 Dependency injection helpers for FastAPI endpoints.
 """
 

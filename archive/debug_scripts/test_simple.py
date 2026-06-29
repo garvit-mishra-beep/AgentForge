@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Simple test to verify the AgentForge benchmark framework"""
 
 import asyncio
@@ -9,9 +9,9 @@ print("Testing framework import...")
 
 try:
     from apps.api.benchmark_simplified import ScientificBenchmarkSimplified
-    print("✅ Framework imported successfully")
+    print("âœ… Framework imported successfully")
 except ImportError as e:
-    print(f"❌ Failed to import framework: {e}")
+    print(f"âŒ Failed to import framework: {e}")
     sys.exit(1)
 
 # Test basic initialization
@@ -21,10 +21,10 @@ try:
         db_url="postgresql://agentforge:agentforge@localhost:5432/agentforge",
         api_base="http://localhost:8000/api/v1"
     )
-    print("✅ Initialization successful")
+    print("âœ… Initialization successful")
     print(f"  - Tasks defined: {len(benchmark.tasks)}")
     print(f"  - Conditions: {list(benchmark.conditions.keys())}")
-    
+
     # Test analysis function
     test_condition_results = {
         'A': {'avg_score': 75.5, 'successful_tasks': 4, 'tasks_completed': 5},
@@ -32,24 +32,24 @@ try:
         'C': {'avg_score': 85.3, 'successful_tasks': 5, 'tasks_completed': 5},
         'D': {'avg_score': 76.8, 'successful_tasks': 4, 'tasks_completed': 5},
     }
-    
+
     analysis = benchmark._analyze_results(test_condition_results)
-    
+
     print("\nTest Analysis Results:")
     print(f"  Best Single Model: {analysis['best_single_model']}")
     print(f"  AgentForge Team Score: {analysis['team_score']:.1f}")
     print(f"  Team vs Single Delta: {analysis['team_vs_single']['percent']:+.1f}%")
     print(f"  Success Criteria Met: {analysis['success_criteria_met']}")
     print(f"  Collaboration Benefit: {analysis['collaboration_benefit']:.1f} points")
-    
+
     # Test success criteria
     if analysis['success_criteria_met']:
-        print("\n✅ SUCCESS CRITERIA MET - Team outperforms single models!")
+        print("\nâœ… SUCCESS CRITERIA MET - Team outperforms single models!")
     else:
-        print("\n❌ FAILS SUCCESS CRITERIA - Team does not demonstrate superiority")
-        
+        print("\nâŒ FAILS SUCCESS CRITERIA - Team does not demonstrate superiority")
+
 except Exception as e:
-    print(f"❌ Test failed: {e}")
+    print(f"âŒ Test failed: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)

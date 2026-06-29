@@ -1,4 +1,4 @@
-"""Eval harness: run behavioral cases and produce a pass/fail report.
+﻿"""Eval harness: run behavioral cases and produce a pass/fail report.
 
 A case is a callable (sync or async) returning ``(passed: bool, detail: str)``.
 The harness runs them all, tolerates exceptions (counted as failures), and emits

@@ -1,6 +1,6 @@
-"""Tests for structured agent outputs and the aggregator verdict logic.
+﻿"""Tests for structured agent outputs and the aggregator verdict logic.
 
-Pure-logic tests — no DB/provider needed. Guards TOP_FINDINGS #19 (substring
+Pure-logic tests â€” no DB/provider needed. Guards TOP_FINDINGS #19 (substring
 "fail" verdict replaced by validated ReviewOutput.verdict).
 """
 

@@ -1,4 +1,4 @@
-"""Deterministic scorer for generated code against a labeled rubric.
+﻿"""Deterministic scorer for generated code against a labeled rubric.
 
 The scorer is the honest core of the benchmark: given an agent's free-text
 output and a task rubric, it produces a reproducible 0..1 score with a per-check
@@ -105,7 +105,7 @@ def _run_tests_sandbox(code: str, tests: str, timeout: float = 10.0) -> tuple[bo
     """Execute ``code`` + ``tests`` in a separate Python process.
 
     Isolation is via a subprocess (no network needed, bounded by timeout). This
-    is not a hardened security sandbox — the dataset is trusted — but it prevents
+    is not a hardened security sandbox â€” the dataset is trusted â€” but it prevents
     a hung/exiting snippet from taking down the harness.
     """
     script = f"{code}\n\n# --- rubric tests ---\n{tests}\n"

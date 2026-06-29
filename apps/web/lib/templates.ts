@@ -1,4 +1,4 @@
-import type { AgentRole } from "./constants";
+﻿import type { AgentRole } from "./constants";
 
 export interface TemplateMember {
   role: AgentRole;

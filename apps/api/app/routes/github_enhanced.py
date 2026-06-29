@@ -1,4 +1,4 @@
-"""
+﻿"""
 Enhanced GitHub Routes for AgentForge.
 Provides additional endpoints for repository synchronization and enhanced workflow integration.
 """

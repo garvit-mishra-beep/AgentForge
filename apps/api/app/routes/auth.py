@@ -1,4 +1,4 @@
-"""Authentication routes - login, register, refresh, logout."""
+﻿"""Authentication routes - login, register, refresh, logout."""
 
 import uuid
 
@@ -125,7 +125,7 @@ async def register(body: RegisterRequest, request: Request) -> AuthResponse:
 async def refresh(body: RefreshRequest, request: Request) -> RefreshResponse:
     """Rotate a refresh token: validate, revoke the old jti, issue a new pair.
 
-    Reuse of an already-rotated/revoked token is rejected (401) — this both
+    Reuse of an already-rotated/revoked token is rejected (401) â€” this both
     enforces single-use rotation and detects token theft.
     """
     db = _db(request)

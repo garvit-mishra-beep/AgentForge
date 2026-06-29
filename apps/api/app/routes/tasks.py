@@ -1,10 +1,19 @@
 import logging
 import uuid
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 
-from agents.orchestrator import run_task
-from app.auth import require_user
+from app.auth import require_user, validate_websocket_token
 from core.task_tracker import tracker
 from models.schemas import (
     TaskCreate,
@@ -19,6 +28,86 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 def _db(request: Request):
     return request.app.state.db
+
+
+# WebSocket connection manager for task updates
+class TaskWebSocketManager:
+    def __init__(self):
+        # Map task_id to set of WebSocket connections
+        self.active_connections: dict[str, set[WebSocket]] = {}
+
+    async def connect(self, websocket: WebSocket, task_id: str):
+        await websocket.accept()
+        if task_id not in self.active_connections:
+            self.active_connections[task_id] = set()
+        self.active_connections[task_id].add(websocket)
+        logger.info(f"WebSocket connected for task {task_id}. Total connections: {len(self.active_connections[task_id])}")
+
+    def disconnect(self, websocket: WebSocket, task_id: str):
+        if task_id in self.active_connections:
+            self.active_connections[task_id].discard(websocket)
+            if not self.active_connections[task_id]:
+                del self.active_connections[task_id]
+        logger.info(f"WebSocket disconnected for task {task_id}")
+
+    async def broadcast_to_task(self, task_id: str, message: dict):
+        if task_id in self.active_connections:
+            disconnected = set()
+            for websocket in self.active_connections[task_id]:
+                try:
+                    await websocket.send_json(message)
+                except Exception as e:
+                    logger.error(f"Failed to send WebSocket message: {e}")
+                    disconnected.add(websocket)
+
+            # Remove disconnected clients
+            for ws in disconnected:
+                self.active_connections[task_id].discard(ws)
+
+    async def task_status_update(self, task_id: str, status: str, details: str | None = None):
+        """Send task status update to connected clients."""
+        message = {
+            "type": "task_status_update",
+            "payload": {
+                "task_id": task_id,
+                "status": status,
+                "details": details
+            },
+            "timestamp": datetime.now(UTC).isoformat()
+        }
+        await self.broadcast_to_task(task_id, message)
+
+    async def agent_message(self, task_id: str, content: str, role: str, model: str, chunk_index: int):
+        """Send agent message (streaming content) to connected clients."""
+        message = {
+            "type": "agent_message",
+            "payload": {
+                "task_id": task_id,
+                "content": content,
+                "role": role,
+                "model": model,
+                "chunk_index": chunk_index
+            },
+            "timestamp": datetime.now(UTC).isoformat()
+        }
+        await self.broadcast_to_task(task_id, message)
+
+    async def execution_log(self, task_id: str, node: str, data: str):
+        """Send execution log to connected clients."""
+        message = {
+            "type": "execution_log",
+            "payload": {
+                "task_id": task_id,
+                "node": node,
+                "data": data
+            },
+            "timestamp": datetime.now(UTC).isoformat()
+        }
+        await self.broadcast_to_task(task_id, message)
+
+
+# Global WebSocket manager instance
+ws_manager = TaskWebSocketManager()
 
 
 async def _require_task_ownership(db, task_id: str, user_id: str) -> TaskResponse | None:
@@ -88,6 +177,7 @@ async def create_task(
         task_id, body.team_id, body.title, body.description, user_id, body.project_id,
     )
 
+    from agents.orchestrator import run_task
     tracker.create_task(run_task(db, task_id), name=f"task-{task_id[:8]}")
 
     return await _get_task_by_id(db, task_id)
@@ -97,7 +187,7 @@ async def create_task(
 async def list_tasks(
     request: Request,
     user_id: str = Depends(require_user),
-    limit: int = 50,
+    limit: int = Query(default=50, ge=1, le=200),
     offset: int = 0,
 ):
     db = _db(request)
@@ -169,6 +259,64 @@ async def get_task_messages(
         )
         for r in rows
     ]
+
+
+@router.websocket("/{task_id}/ws")
+async def task_websocket_endpoint(
+    websocket: WebSocket,
+    task_id: str,
+    request: Request,
+):
+    """WebSocket endpoint for real-time task updates."""
+    # Extract token from query parameters or cookies for authentication
+    token = websocket.query_params.get("token")
+    if not token:
+        # Fallback to checking cookies (for same-origin requests)
+        cookie_header = websocket.headers.get('cookie', '')
+        if cookie_header:
+            cookies = dict(cookie.split('=', 1) for cookie in cookie_header.split('; ') if '=' in cookie)
+            token = cookies.get('agentforge_token')
+
+    # Verify the token
+    user_id = None
+    if token:
+        user_id = await validate_websocket_token(token)
+
+    # If no token in query/cookies, try to get from headers (less common for WS but possible)
+    if not user_id:
+        auth_header = websocket.headers.get('authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header[7:]  # Remove 'Bearer ' prefix
+            user_id = await validate_websocket_token(token)
+
+    if not user_id:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Unauthorized")
+        return
+
+    # Verify task ownership
+    db = _db(request)
+    task = await _require_task_ownership(db, task_id, user_id)
+    if not task:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Task not found or access denied")
+        return
+
+    # Connect the WebSocket
+    await ws_manager.connect(websocket, task_id)
+
+    try:
+        # Keep connection alive and handle incoming messages (if any)
+        while True:
+            # We primarily send data to client, but listen for disconnect
+            try:
+                await websocket.receive_text()
+            except WebSocketDisconnect:
+                break
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.error(f"WebSocket error for task {task_id}: {e}")
+    finally:
+        ws_manager.disconnect(websocket, task_id)
 
 
 async def _get_task_by_id(db, task_id: str) -> TaskResponse | None:

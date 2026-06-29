@@ -1,4 +1,4 @@
-"""Tests for the GitHub App integration (signature, app JWT, PR handling, webhook)."""
+﻿"""Tests for the GitHub App integration (signature, app JWT, PR handling, webhook)."""
 
 import hashlib
 import hmac
@@ -130,7 +130,7 @@ async def _ret(value):
     return value
 
 
-# ── Webhook route (needs app/DB via the standard client fixture) ───────────
+# â”€â”€ Webhook route (needs app/DB via the standard client fixture) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @pytest.mark.asyncio

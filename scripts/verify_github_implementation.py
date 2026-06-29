@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Verification script for GitHub Native Workflow implementation.
 This script verifies that all components are properly implemented and can be imported.
@@ -27,9 +27,9 @@ def test_imports():
             enhanced_pr_reviewer,
             repository_synchronizer
         )
-        print("✓ Enhanced GitHub imports successful")
+        print("âœ“ Enhanced GitHub imports successful")
     except Exception as e:
-        print(f"✗ Enhanced GitHub imports failed: {e}")
+        print(f"âœ— Enhanced GitHub imports failed: {e}")
         return False
 
     try:
@@ -38,16 +38,16 @@ def test_imports():
             default_pr_reviewer,
             _findings_to_comments
         )
-        print("✓ Base GitHub imports successful")
+        print("âœ“ Base GitHub imports successful")
     except Exception as e:
-        print(f"✗ Base GitHub imports failed: {e}")
+        print(f"âœ— Base GitHub imports failed: {e}")
         return False
 
     try:
         from apps.api.app.routes.github import router
-        print("✓ GitHub routes import successful")
+        print("âœ“ GitHub routes import successful")
     except Exception as e:
-        print(f"✗ GitHub routes import failed: {e}")
+        print(f"âœ— GitHub routes import failed: {e}")
         return False
 
     return True
@@ -67,10 +67,10 @@ def test_components_instantiation():
         pr_reviewer = EnhancedPRReviewer()
         repo_sync = RepositorySynchronizer()
 
-        print("✓ Component instantiation successful")
+        print("âœ“ Component instantiation successful")
         return True
     except Exception as e:
-        print(f"✗ Component instantiation failed: {e}")
+        print(f"âœ— Component instantiation failed: {e}")
         return False
 
 def test_route_configuration():
@@ -86,15 +86,15 @@ def test_route_configuration():
 
         for route in expected_routes:
             if any(route in r for r in routes):
-                print(f"✓ Route {route} found")
+                print(f"âœ“ Route {route} found")
             else:
-                print(f"✗ Route {route} not found")
+                print(f"âœ— Route {route} not found")
                 return False
 
-        print("✓ Route configuration verification successful")
+        print("âœ“ Route configuration verification successful")
         return True
     except Exception as e:
-        print(f"✗ Route configuration verification failed: {e}")
+        print(f"âœ— Route configuration verification failed: {e}")
         return False
 
 def main():
@@ -119,11 +119,11 @@ def main():
     print(f"Results: {passed}/{total} tests passed")
 
     if passed == total:
-        print("🎉 All verification tests passed!")
+        print("ðŸŽ‰ All verification tests passed!")
         print("The GitHub Native Workflow system is ready for use.")
         return 0
     else:
-        print("❌ Some verification tests failed.")
+        print("âŒ Some verification tests failed.")
         return 1
 
 if __name__ == "__main__":

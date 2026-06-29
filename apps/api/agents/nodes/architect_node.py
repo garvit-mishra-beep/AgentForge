@@ -1,4 +1,4 @@
-import json
+﻿import json
 import logging
 
 from agents.sanitize import wrap_context, wrap_task
@@ -14,7 +14,7 @@ async def architect_node(state: AgentState) -> AgentState:
     logger.info("Architect review phase")
 
     if "architect" not in state["team_config"]:
-        logger.info("No architect agent configured — skipping")
+        logger.info("No architect agent configured â€” skipping")
         state["architect_output"] = '{"recommendations": [], "summary": "No architect agent configured", "quality_score": 0}'
         return state
 

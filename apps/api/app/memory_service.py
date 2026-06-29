@@ -4,10 +4,54 @@ Stores, retrieves, and ranks memories for cross-session context.
 """
 
 import json
+import logging
 import uuid
 from typing import Any
 
 from core.database import DatabasePool
+
+logger = logging.getLogger(__name__)
+
+
+async def _get_embedding(text: str, user_id: str, project_id: str | None, db: Any) -> list[float] | None:
+    """Generate embedding for the text if a provider is configured, otherwise return None."""
+    try:
+        from core.providers import get_provider_for_user
+        provider, provider_type = await get_provider_for_user("text-embedding-3-small", user_id, project_id, db)
+        if provider_type == "openai":
+            client = await provider._get_client()  # type: ignore[attr-defined]
+            response = await client.embeddings.create(
+                model="text-embedding-3-small",
+                input=text,
+            )
+            return response.data[0].embedding
+    except Exception as e:
+        logger.debug("Could not generate embedding, using keyword fallback: %s", e)
+    return None
+
+
+_has_embedding_column: bool | None = None
+
+
+async def _check_embedding_column(db: DatabasePool) -> bool:
+    global _has_embedding_column
+    if _has_embedding_column is not None:
+        return _has_embedding_column
+    try:
+        column_exists = await db.fetchval(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'agent_memories' AND column_name = 'embedding'
+            )
+            """
+        )
+        _has_embedding_column = bool(column_exists)
+    except Exception as e:
+        logger.warning("Error checking embedding column: %s", e)
+        _has_embedding_column = False
+    return _has_embedding_column
 
 
 async def store_memory(
@@ -25,16 +69,29 @@ async def store_memory(
     metadata: dict | None = None,
 ) -> str:
     """Store a memory."""
+    has_emb = await _check_embedding_column(db)
+    embedding = await _get_embedding(content, user_id, project_id, db) if has_emb else None
     mem_id = str(uuid.uuid4())
-    await db.execute(
-        """
-        INSERT INTO agent_memories (id, user_id, project_id, team_id, task_id, key, content, memory_type, importance, tags, source, metadata)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-        """,
-        mem_id, user_id, project_id, team_id, task_id, key, content,
-        memory_type, importance, tags or [], source,
-        json.dumps(metadata or {}),
-    )
+    if has_emb:
+        await db.execute(
+            """
+            INSERT INTO agent_memories (id, user_id, project_id, team_id, task_id, key, content, memory_type, importance, tags, source, metadata, embedding)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            """,
+            mem_id, user_id, project_id, team_id, task_id, key, content,
+            memory_type, importance, tags or [], source,
+            json.dumps(metadata or {}), embedding,
+        )
+    else:
+        await db.execute(
+            """
+            INSERT INTO agent_memories (id, user_id, project_id, team_id, task_id, key, content, memory_type, importance, tags, source, metadata)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            """,
+            mem_id, user_id, project_id, team_id, task_id, key, content,
+            memory_type, importance, tags or [], source,
+            json.dumps(metadata or {}),
+        )
     return mem_id
 
 
@@ -117,14 +174,10 @@ async def get_relevant_memories(
     limit: int = 10,
 ) -> list[dict]:
     """
-    Get relevant memories based on keyword matching.
-    Simple approach: match against key, content, and tags.
-    For production, this would use vector embeddings.
+    Get relevant memories based on vector similarity or keyword matching.
     """
-    keywords = [w.strip().lower() for w in context.split() if len(w.strip()) > 3]
-
-    if not keywords:
-        return []
+    has_emb = await _check_embedding_column(db)
+    embedding = await _get_embedding(context, user_id, project_id, db) if has_emb else None
 
     conditions = ["user_id = $1"]
     params: list[Any] = [user_id]
@@ -138,6 +191,25 @@ async def get_relevant_memories(
         conditions.append(f"team_id = ${idx}")
         params.append(team_id)
         idx += 1
+
+    if has_emb and embedding is not None:
+        params.append(embedding)
+        query = f"""
+            SELECT *, 1 - (embedding <=> ${idx}) as similarity
+            FROM agent_memories
+            WHERE {' AND '.join(conditions)} AND embedding IS NOT NULL
+            ORDER BY similarity DESC, importance DESC
+            LIMIT ${idx + 1}
+        """
+        params.append(limit)
+        rows = await db.fetch(query, *params)
+        return [_row_to_dict(r) for r in rows]
+
+    # Fallback to keyword matching
+    keywords = [w.strip().lower() for w in context.split() if len(w.strip()) > 3]
+
+    if not keywords:
+        return []
 
     # Keyword matching against key, content, and tags
     kw_conditions = []

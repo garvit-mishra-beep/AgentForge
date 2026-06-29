@@ -1,4 +1,4 @@
-"""Tests for AI provider resolution."""
+﻿"""Tests for AI provider resolution."""
 
 import pytest
 

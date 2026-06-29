@@ -5,13 +5,27 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from app.routes.keys import get_user_api_key
 from core.config import settings
 
+
+def _retry_exception(exception) -> bool:
+    if isinstance(exception, (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.PoolTimeout)):
+        return True
+    if isinstance(exception, httpx.HTTPStatusError):
+        # Retry on 429 (rate limit) and 5xx (server errors)
+        return exception.response.status_code == 429 or 500 <= exception.response.status_code < 600
+    # Support library-specific exceptions (e.g. OpenAI/Anthropic APIStatusError)
+    status_code = getattr(exception, "status_code", None)
+    if status_code is not None:
+        return status_code == 429 or 500 <= status_code < 600
+    return False
+
 logger = logging.getLogger(__name__)
 
-# ── Dataclasses and Exceptions ──────────────────────────────────────────
+# â”€â”€ Dataclasses and Exceptions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @dataclass
 class ChatResponse:
@@ -52,7 +66,7 @@ class AIProvider(ABC):
         ...
 
 
-# ── Shared HTTP client pool ──────────────────────────────────────────
+# â”€â”€ Shared HTTP client pool â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 _shared_client: httpx.AsyncClient | None = None
 
@@ -75,7 +89,7 @@ async def close_shared_client() -> None:
         _shared_client = None
 
 
-# ── OpenAI ──────────────────────────────────────────────────────────
+# â”€â”€ OpenAI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class OpenAIProvider(AIProvider):
     def __init__(self, config: ProviderConfig | None = None):
@@ -120,7 +134,7 @@ class OpenAIProvider(AIProvider):
                 kwargs["max_tokens"] = max_tokens
             if timeout_s is not None:
                 kwargs["timeout"] = timeout_s
-            response = await client.chat.completions.create(**kwargs)
+            response = await self._make_retryable_api_call(client, kwargs)
             duration_ms = (time.monotonic() - start) * 1000
             usage = None
             if response.usage:
@@ -138,8 +152,17 @@ class OpenAIProvider(AIProvider):
         except Exception as e:
             raise AIProviderError("openai", model, str(e)) from e
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception(_retry_exception),
+        reraise=True
+    )
+    async def _make_retryable_api_call(self, client, kwargs):
+        return await client.chat.completions.create(**kwargs)
 
-# ── Anthropic ──────────────────────────────────────────────────────────
+
+# â”€â”€ Anthropic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class AnthropicProvider(AIProvider):
     def __init__(self, config: ProviderConfig | None = None):
@@ -178,7 +201,7 @@ class AnthropicProvider(AIProvider):
             )
             if timeout_s is not None:
                 kwargs["timeout"] = timeout_s
-            response = await client.messages.create(**kwargs)
+            response = await self._make_retryable_api_call(client, kwargs)
             duration_ms = (time.monotonic() - start) * 1000
             usage = None
             if hasattr(response, "usage"):
@@ -197,7 +220,17 @@ class AnthropicProvider(AIProvider):
             raise AIProviderError("anthropic", model, str(e)) from e
 
 
-# ── Google ─────────────────────────────────────────────────────────────
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception(_retry_exception),
+        reraise=True
+    )
+    async def _make_retryable_api_call(self, client, kwargs):
+        return await client.messages.create(**kwargs)
+
+
+# â”€â”€ Google â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class GoogleProvider(AIProvider):
     def __init__(self, config: ProviderConfig | None = None):
@@ -211,6 +244,28 @@ class GoogleProvider(AIProvider):
             self._client = genai.Client(api_key=api_key)
         return self._client
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception(_retry_exception),
+        reraise=True
+    )
+    async def _make_retryable_api_call(self, client, kwargs):
+        return await client.aio.models.generate_content(
+            model=kwargs["model"],
+            contents=kwargs["contents"],
+            config=type(
+                "Config",
+                (),
+                {
+                    "system_instruction": kwargs.get("system_instruction"),
+                    "temperature": kwargs.get("temperature", 0.2),
+                    **({"max_output_tokens": kwargs["max_output_tokens"]} if "max_output_tokens" in kwargs else {}),
+                },
+            )(),
+        )
+
+
     async def chat(
         self,
         model: str,
@@ -222,21 +277,15 @@ class GoogleProvider(AIProvider):
         client = await self._get_client()
         start = time.monotonic()
         try:
-            config_kwargs = dict(
+            kwargs = dict(
+                model=model,
+                contents=user_message,
                 system_instruction=system_prompt,
                 temperature=0.2,
             )
             if max_tokens is not None:
-                config_kwargs["max_output_tokens"] = max_tokens
-            response = await client.aio.models.generate_content(
-                model=model,
-                contents=user_message,
-                config=type(
-                    "Config",
-                    (),
-                    {"system_instruction": system_prompt, "temperature": 0.2, **({"max_output_tokens": max_tokens} if max_tokens else {})},
-                )(),
-            )
+                kwargs["max_output_tokens"] = max_tokens
+            response = await self._make_retryable_api_call(client, kwargs)
             duration_ms = (time.monotonic() - start) * 1000
             usage = None
             if hasattr(response, "usage_metadata"):
@@ -258,7 +307,7 @@ class GoogleProvider(AIProvider):
 
 
 
-# ── OpenAI Compatible (Groq, OpenRouter, etc.) ──────────────────────────
+# â”€â”€ OpenAI Compatible (Groq, OpenRouter, etc.) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class OpenAICompatibleProvider(AIProvider):
     def __init__(self, config: ProviderConfig | None = None):
@@ -277,6 +326,15 @@ class OpenAICompatibleProvider(AIProvider):
                 http_client=http_client,
             )
         return self._client
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception(_retry_exception),
+        reraise=True
+    )
+    async def _make_retryable_api_call(self, client, kwargs):
+        return await client.chat.completions.create(**kwargs)
 
     async def chat(
         self,
@@ -301,7 +359,7 @@ class OpenAICompatibleProvider(AIProvider):
                 kwargs["max_tokens"] = max_tokens
             if timeout_s is not None:
                 kwargs["timeout"] = timeout_s
-            response = await client.chat.completions.create(**kwargs)
+            response = await self._make_retryable_api_call(client, kwargs)
             duration_ms = (time.monotonic() - start) * 1000
             usage = None
             if response.usage:
@@ -320,7 +378,7 @@ class OpenAICompatibleProvider(AIProvider):
             raise AIProviderError("openai-compatible", model, str(e)) from e
 
 
-# ── Factories and Resolvers ──────────────────────────────────────────
+# â”€â”€ Factories and Resolvers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def create_provider(provider_type: str, config: ProviderConfig | None = None) -> AIProvider:
     """Create a provider instance based on type and configuration."""

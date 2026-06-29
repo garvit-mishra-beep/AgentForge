@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 from typing import Any
 
 from agents.sanitize import wrap_context, wrap_task
@@ -14,7 +14,7 @@ async def security_node(state: AgentState) -> dict[str, Any]:
     logger.info("Security review phase")
 
     if "security" not in state["team_config"]:
-        logger.info("No security agent configured — skipping")
+        logger.info("No security agent configured â€” skipping")
         return {"security_output": '{"findings": [], "summary": "No security agent configured", "risk_level": "unknown"}'}
 
     # Get user and project context from state (with fallbacks)

@@ -1,4 +1,4 @@
-import type { AgentRole, AgentStatus, MessageType, TaskStatus, ProviderName } from "./constants";
+﻿import type { AgentRole, AgentStatus, MessageType, TaskStatus, ProviderName } from "./constants";
 
 export interface Team {
   id: string;

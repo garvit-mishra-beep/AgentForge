@@ -1,10 +1,10 @@
-"""
+﻿"""
 End-to-End integration tests for the full AgentForge pipeline.
 
 Tests the complete flow:
-  Register → Create Project → Upload Repo → Context Parse →
-  Create Task → Execute (fast_demo) → Memories Stored →
-  Analytics Updated → Next Task Reuses Memories
+  Register â†’ Create Project â†’ Upload Repo â†’ Context Parse â†’
+  Create Task â†’ Execute (fast_demo) â†’ Memories Stored â†’
+  Analytics Updated â†’ Next Task Reuses Memories
 """
 
 import json
@@ -18,7 +18,7 @@ from agents.graph import build_graph
 from agents.state import AgentState
 from core.providers import ChatResponse
 
-# ── Fixtures ─────────────────────────────────────────────────────────────
+# â”€â”€ Fixtures â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @pytest_asyncio.fixture
 async def api_client(setup_db):
@@ -112,7 +112,7 @@ def mock_providers():
         patcher.stop()
 
 
-# ── 1. Graph Flow — Parallel Execution ───────────────────────────────────
+# â”€â”€ 1. Graph Flow â€” Parallel Execution â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _initial_state(overrides: dict | None = None) -> AgentState:
     state: AgentState = {
@@ -149,7 +149,7 @@ def _initial_state(overrides: dict | None = None) -> AgentState:
 
 @pytest.mark.asyncio
 async def test_parallel_graph_all_nodes_execute(mock_providers):
-    """All 8 nodes execute: sequential plan→build, parallel reviewer+tester+security+architect, aggregator, deliver."""
+    """All 8 nodes execute: sequential planâ†’build, parallel reviewer+tester+security+architect, aggregator, deliver."""
     graph = build_graph()
 
     final_state = None
@@ -256,7 +256,7 @@ async def test_parallel_graph_context_and_memories_in_state(mock_providers):
     assert final_state["current_step"] == "__end__"
 
 
-# ── 2. API Integration — Register → Project → File → Context ─────────────
+# â”€â”€ 2. API Integration â€” Register â†’ Project â†’ File â†’ Context â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @pytest.mark.asyncio
@@ -375,7 +375,7 @@ class UserService:
     assert "json" in sources
 
 
-# ── 3. Teams + Tasks + Execution ─────────────────────────────────────────
+# â”€â”€ 3. Teams + Tasks + Execution â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @pytest.mark.asyncio
@@ -406,7 +406,7 @@ async def test_e2e_team_creation(api_client):
 
 @pytest.mark.asyncio
 async def test_e2e_full_pipeline(api_client, mock_providers):
-    """Complete pipeline: project → team → task → execution → completion → analytics."""
+    """Complete pipeline: project â†’ team â†’ task â†’ execution â†’ completion â†’ analytics."""
     # Create project
     resp = await api_client.post("/api/v1/projects", json={
         "name": "Full Pipeline Test",
@@ -476,7 +476,7 @@ async def test_e2e_full_pipeline(api_client, mock_providers):
     assert task_execs[0]["status"] == "completed"
 
 
-# ── 4. Memory Store and Retrieval ────────────────────────────────────────
+# â”€â”€ 4. Memory Store and Retrieval â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @pytest.mark.asyncio
@@ -526,7 +526,7 @@ async def test_e2e_memory_crud(api_client):
     assert resp.status_code == 204
 
 
-# ── 5. Analytics ─────────────────────────────────────────────────────────
+# â”€â”€ 5. Analytics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @pytest.mark.asyncio
@@ -552,7 +552,7 @@ async def test_e2e_analytics(api_client):
     assert "dashboard" in export
 
 
-# ── 6. Memory stored by orchestrator after execution ────────────────────
+# â”€â”€ 6. Memory stored by orchestrator after execution â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @pytest.mark.asyncio
@@ -597,7 +597,7 @@ async def test_e2e_execution_stores_memories(api_client, mock_providers):
     assert len(memories) >= 0  # May not match text search exactly
 
 
-# ── 7. Security: Edge cases and validations ────────────────────────────
+# â”€â”€ 7. Security: Edge cases and validations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @pytest.mark.asyncio

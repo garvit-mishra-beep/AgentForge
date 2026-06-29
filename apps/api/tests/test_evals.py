@@ -1,4 +1,4 @@
-"""CI wrapper for the agent evaluation framework (offline, mocked providers)."""
+﻿"""CI wrapper for the agent evaluation framework (offline, mocked providers)."""
 
 import pytest
 

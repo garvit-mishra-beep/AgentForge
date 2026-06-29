@@ -1,4 +1,4 @@
-"""Tests for authentication middleware and auth routes."""
+﻿"""Tests for authentication middleware and auth routes."""
 
 import pytest
 from httpx import ASGITransport, AsyncClient

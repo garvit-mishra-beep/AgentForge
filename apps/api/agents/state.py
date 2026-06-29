@@ -1,4 +1,4 @@
-import operator
+﻿import operator
 from typing import Annotated, Any, NotRequired, TypedDict
 
 

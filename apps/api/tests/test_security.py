@@ -1,4 +1,4 @@
-"""Security and observability tests."""
+﻿"""Security and observability tests."""
 
 import json
 import logging
@@ -44,7 +44,7 @@ async def test_encryption_mask_key():
     masked = service.mask_key(key)
     assert "cdef" in masked
     assert "1234567890" not in masked
-    assert "****" in masked or "••••" in masked
+    assert "****" in masked or "â€¢â€¢â€¢â€¢" in masked
 
 
 @pytest.mark.asyncio
@@ -113,7 +113,7 @@ async def test_rate_limiter_window_expiry():
     assert allowed is True
 
 
-# ── Brute Force Protection ────────────────────────────────────────────
+# â”€â”€ Brute Force Protection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @pytest.mark.asyncio
@@ -155,7 +155,7 @@ async def test_brute_force_different_users_independent():
     assert await is_login_locked("free-user", max_attempts=5, lockout_seconds=60) is False
 
 
-# ── Rate Limiter Key Prefix ───────────────────────────────────────────
+# â”€â”€ Rate Limiter Key Prefix â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @pytest.mark.asyncio
@@ -168,7 +168,7 @@ async def test_rate_limiter_different_prefixes_independent():
     assert await rate_limit_check(ip, limit=10, window=3600, key_prefix="prefix_b:") is True
 
 
-# ── Filename Sanitization ─────────────────────────────────────────────
+# â”€â”€ Filename Sanitization â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def test_sanitize_filename_removes_path_separators():
@@ -203,7 +203,7 @@ def test_allowed_extensions_contains_common_types():
         assert ext in _ALLOWED_EXTENSIONS
 
 
-# ── Observability ────────────────────────────────────────────────────
+# â”€â”€ Observability â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def test_generate_correlation_id_returns_uuid():
@@ -249,7 +249,7 @@ async def test_metrics_tracks_requests(client):
     assert len(recent) >= 1
 
 
-# ── Security Headers ─────────────────────────────────────────────────
+# â”€â”€ Security Headers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @pytest.mark.asyncio
@@ -262,7 +262,7 @@ async def test_security_headers_present(client):
     assert resp.headers.get("cache-control") == "no-store"
 
 
-# ── JSON Logging ──────────────────────────────────────────────────
+# â”€â”€ JSON Logging â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def test_json_formatter_produces_valid_json():

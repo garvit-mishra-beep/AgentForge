@@ -1,8 +1,7 @@
-import {
+﻿import {
   Sparkles,
   Code2,
   Search,
-  Rocket,
   Bug,
   Bot,
   Brain,

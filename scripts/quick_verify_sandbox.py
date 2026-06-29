@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Quick verification script for the Execution Sandbox implementation.
 """
@@ -15,10 +15,10 @@ def test_basic_imports():
 
     try:
         from apps.api.app.services import sandbox_executor, test_executor
-        print("✓ Services imported successfully")
+        print("âœ“ Services imported successfully")
         return True
     except Exception as e:
-        print(f"✗ Import failed: {e}")
+        print(f"âœ— Import failed: {e}")
         return False
 
 def test_class_availability():
@@ -38,10 +38,10 @@ def test_class_availability():
         executor = TestExecutor()
         assert hasattr(executor, 'sandbox')
 
-        print("✓ Classes available and instantiable")
+        print("âœ“ Classes available and instantiable")
         return True
     except Exception as e:
-        print(f"✗ Class test failed: {e}")
+        print(f"âœ— Class test failed: {e}")
         return False
 
 def main():
@@ -61,10 +61,10 @@ def main():
     print(f"\nResults: {passed}/{len(tests)} tests passed")
 
     if passed == len(tests):
-        print("✅ Basic verification passed!")
+        print("âœ… Basic verification passed!")
         return 0
     else:
-        print("❌ Basic verification failed!")
+        print("âŒ Basic verification failed!")
         return 1
 
 if __name__ == "__main__":

@@ -71,16 +71,20 @@ The backend service can be built and run using the root Dockerfile configuration
 ```dockerfile
 FROM python:3.11-slim AS builder
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --user -r requirements.txt
+COPY apps/api/requirements.txt ./apps/api/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r ./apps/api/requirements.txt
+COPY . .
 
 FROM python:3.11-slim
-WORKDIR /app
-COPY --from=builder /root/.local /root/.local
-COPY . .
-ENV PATH=/root/.local/bin:$PATH
+RUN groupadd -r agentforge && useradd -r -g agentforge -m -d /app agentforge
+WORKDIR /app/apps/api
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /app /app
+RUN chown -R agentforge:agentforge /app
+USER agentforge
 EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8000/api/v1/health || exit 1
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
 ```

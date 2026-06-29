@@ -1,4 +1,4 @@
-"""Fast Demo Mode benchmark for AgentForge.
+﻿"""Fast Demo Mode benchmark for AgentForge.
 
 Tests 5 tasks through the FastAPI flow and measures completion time.
 Requires API running on localhost:8000.

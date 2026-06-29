@@ -1,4 +1,4 @@
-"""Cross-tenant authorization tests for project file routes (IDOR regression).
+﻿"""Cross-tenant authorization tests for project file routes (IDOR regression).
 
 These guard the fix for TOP_FINDINGS #1/#2: file metadata/download/delete routes
 previously filtered by ``project_id`` only, letting any authenticated user reach

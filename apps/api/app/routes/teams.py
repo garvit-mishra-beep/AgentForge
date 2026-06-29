@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.auth import require_user
 from models.schemas import (
@@ -73,7 +73,7 @@ async def create_team(
 async def list_teams(
     request: Request,
     user_id: str = Depends(require_user),
-    limit: int = 50,
+    limit: int = Query(default=50, ge=1, le=200),
     offset: int = 0,
 ):
     db = _db(request)

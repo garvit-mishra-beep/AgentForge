@@ -1,4 +1,4 @@
-"""Quick throughput benchmark for AgentForge API.
+﻿"""Quick throughput benchmark for AgentForge API.
 
 Measures requests per second for key endpoints under concurrent load.
 
@@ -113,7 +113,7 @@ async def main():
         print()
 
     if all_results:
-        print("── Summary ──────────────────────────────────────")
+        print("â”€â”€ Summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€")
         for r in all_results:
             print(f"  {r['endpoint']:40s} {r['rps']:>8.1f} req/s")
 

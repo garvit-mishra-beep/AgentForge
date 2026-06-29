@@ -1,4 +1,4 @@
-"""CLI tests using httpx MockTransport (no live server)."""
+﻿"""CLI tests using httpx MockTransport (no live server)."""
 
 import json
 import sys

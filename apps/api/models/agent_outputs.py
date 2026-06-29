@@ -1,15 +1,15 @@
-"""Structured, validated schemas for agent outputs.
+﻿"""Structured, validated schemas for agent outputs.
 
 Agents are prompted to emit JSON, but historically nothing validated it and the
 aggregator decided pass/fail by a substring search for ``"fail"`` in free text
-(TOP_FINDINGS #19) — a brittle, easily-fooled heuristic. These Pydantic models
+(TOP_FINDINGS #19) â€” a brittle, easily-fooled heuristic. These Pydantic models
 give every consumer (aggregator, delivery, GitHub bot, feedback flywheel, eval
 harness) a single typed contract for findings and verdicts.
 """
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -28,7 +28,7 @@ _VERDICT_SYNONYMS = {
 }
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     critical = "critical"
     high = "high"
     medium = "medium"
@@ -36,7 +36,7 @@ class Severity(str, Enum):
     info = "info"
 
 
-class Verdict(str, Enum):
+class Verdict(StrEnum):
     passed = "pass"
     failed = "fail"
     review_needed = "review_needed"
